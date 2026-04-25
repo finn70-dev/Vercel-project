@@ -1,0 +1,14 @@
+{
+  "name": "chartr",
+  "version": "1.0.0",
+  "description": "Data Visualization Platform",
+  "main": "api/data.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  },
+  "keywords": ["visualization", "charts", "data"],
+  "author": "",
+  "license": "MIT"
+}

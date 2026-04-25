@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chartr — Data Visualization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0a0a0a;
+    --white: #f5f5f0;
+    --gray: #888;
+    --border: rgba(255,255,255,0.08);
+    --accent: #ffffff;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'Syne', sans-serif;
+    overflow-x: hidden;
+  }
+
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 48px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(20px);
+    background: rgba(10,10,10,0.6);
+    animation: fadeDown 0.8s cubic-bezier(.23,1,.32,1) both;
+  }
+
+  @keyframes fadeDown {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .logo {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: white;
+    text-decoration: none;
+  }
+
+  .logo span { color: var(--gray); }
+
+  .nav-links {
+    display: flex;
+    gap: 40px;
+    list-style: none;
+  }
+
+  .nav-links a {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    color: var(--gray);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: white; }
+
+  .nav-cta {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    padding: 10px 22px;
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    background: transparent;
+    transition: background 0.2s, border-color 0.2s;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  .nav-cta:hover { background: white; color: black; border-color: white; }
+
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 140px 48px 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    animation: gridFade 1.5s ease both;
+  }
+
+  @keyframes gridFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--gray);
+    text-transform: uppercase;
+    margin-bottom: 32px;
+    opacity: 0;
+    animation: slideUp 0.8s 0.3s cubic-bezier(.23,1,.32,1) forwards;
+  }
+
+  .hero-label::before {
+    content: '';
+    display: inline-block;
+    width: 24px;
+    height: 1px;
+    background: var(--gray);
+    vertical-align: middle;
+    margin-right: 12px;
+  }
+
+  .hero-title {
+    font-size: clamp(52px, 8vw, 120px);
+    font-weight: 800;
+    line-height: 0.92;
+    letter-spacing: -0.04em;
+    max-width: 900px;
+    margin-bottom: 40px;
+  }
+
+  .hero-title .line {
+    display: block;
+    overflow: hidden;
+  }
+
+  .hero-title .line span {
+    display: block;
+    opacity: 0;
+    transform: translateY(100%);
+    animation: lineReveal 0.9s cubic-bezier(.23,1,.32,1) forwards;
+  }
+
+  .hero-title .line:nth-child(1) span { animation-delay: 0.4s; }
+  .hero-title .line:nth-child(2) span { animation-delay: 0.55s; }
+  .hero-title .line:nth-child(3) span { animation-delay: 0.7s; }
+
+  @keyframes lineReveal {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-title .outline {
+    -webkit-text-stroke: 1px white;
+    color: transparent;
+  }
+
+  .hero-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--gray);
+    max-width: 440px;
+    line-height: 1.7;
+    opacity: 0;
+    animation: slideUp 0.8s 0.9s cubic-bezier(.23,1,.32,1) forwards;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    margin-top: 48px;
+    opacity: 0;
+    animation: slideUp 0.8s 1.1s cubic-bezier(.23,1,.32,1) forwards;
+  }
+
+  .btn-primary {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    padding: 16px 36px;
+    background: white;
+    color: black;
+    border: none;
+    text-transform: uppercase;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+    cursor: pointer;
+  }
+  .btn-primary::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: black;
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(.23,1,.32,1);
+  }
+  .btn-primary:hover::after { transform: translateY(0); }
+  .btn-primary span { position: relative; z-index: 1; }
+  .btn-primary:hover span { color: white; }
+
+  .btn-link {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--gray);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.2);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-link:hover { color: white; border-color: white; }
+
+  .hero-visual {
+    position: absolute;
+    right: 48px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 380px;
+    opacity: 0;
+    animation: slideUp 1s 1.2s cubic-bezier(.23,1,.32,1) forwards;
+  }
+
+  .chart-card {
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    padding: 24px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    animation: shimmer 3s infinite;
+  }
+
+  @keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .chart-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .chart-value {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+  }
+
+  canvas#liveChart { width: 100%; height: 120px; }
+
+  .chart-tags {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.08em;
+    padding: 4px 10px;
+    border: 1px solid var(--border);
+    color: var(--gray);
+    text-transform: uppercase;
+  }
+
+  .stats-bar {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    padding: 0 48px;
+  }
+
+  .stat-item {
+    padding: 40px 0;
+    border-right: 1px solid var(--border);
+    opacity: 0;
+    animation: slideUp 0.8s cubic-bezier(.23,1,.32,1) forwards;
+  }
+  .stat-item:last-child { border-right: none; }
+  .stat-item:nth-child(1) { animation-delay: 1.3s; padding-right: 40px; }
+  .stat-item:nth-child(2) { animation-delay: 1.45s; padding: 40px 40px; }
+  .stat-item:nth-child(3) { animation-delay: 1.6s; padding-left: 40px; }
+
+  .stat-num {
+    font-size: 42px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--gray);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .features {
+    padding: 120px 48px;
+  }
+
+  .section-tag {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--gray);
+    text-transform: uppercase;
+    margin-bottom: 64px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .section-tag::after {
+    content: '';
+    flex: 1;
+    max-width: 120px;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    border: 1px solid var(--border);
+  }
+
+  .feature-card {
+    padding: 40px;
+    border-right: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+    transition: background 0.3s;
+  }
+  .feature-card:last-child { border-right: none; }
+
+  .feature-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.03);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .feature-card:hover::after { opacity: 1; }
+
+  .feature-icon {
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 28px;
+  }
+
+  .feature-icon svg { width: 18px; height: 18px; stroke: white; fill: none; stroke-width: 1.5; }
+
+  .feature-title {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .feature-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.8;
+  }
+
+  .demo {
+    padding: 0 48px 120px;
+  }
+
+  .demo-inner {
+    border: 1px solid var(--border);
+    padding: 64px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 80px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .demo-inner::before {
+    content: '';
+    position: absolute;
+    top: -1px; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  }
+
+  .demo-title {
+    font-size: 40px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1.1;
+    margin-bottom: 20px;
+  }
+
+  .demo-desc {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--gray);
+    line-height: 1.8;
+    margin-bottom: 32px;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 16px;
+  }
+
+  .demo-input {
+    flex: 1;
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-right: none;
+    color: white;
+    padding: 14px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .demo-input:focus { border-color: rgba(255,255,255,0.4); }
+  .demo-input::placeholder { color: rgba(255,255,255,0.25); }
+
+  .demo-btn {
+    background: white;
+    color: black;
+    border: none;
+    padding: 14px 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .demo-btn:hover { opacity: 0.85; }
+
+  .bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    height: 160px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .bar {
+    flex: 1;
+    background: white;
+    transition: height 0.6s cubic-bezier(.23,1,.32,1);
+    position: relative;
+  }
+
+  .bar::after {
+    content: attr(data-label);
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'DM Mono', monospace;
+    font-size: 9px;
+    color: var(--gray);
+    white-space: nowrap;
+  }
+
+  .bar-values {
+    display: flex;
+    gap: 8px;
+    margin-top: 32px;
+  }
+
+  .bv {
+    flex: 1;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--gray);
+    text-align: center;
+  }
+
+  .ticker-wrap {
+    overflow: hidden;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 0;
+  }
+
+  .ticker {
+    display: flex;
+    gap: 80px;
+    animation: ticker 20s linear infinite;
+    white-space: nowrap;
+  }
+
+  @keyframes ticker {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+
+  .ticker-item {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    flex-shrink: 0;
+  }
+
+  .ticker-item span { color: white; margin-left: 8px; }
+
+  .cta-section {
+    padding: 120px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-section::before {
+    content: '';
+    position: absolute;
+    width: 600px; height: 600px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse 4s ease-in-out infinite;
+  }
+  .cta-section::after {
+    content: '';
+    position: absolute;
+    width: 900px; height: 900px;
+    border: 1px solid rgba(255,255,255,0.03);
+    border-radius: 50%;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    animation: pulse 4s 1s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+    50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.5; }
+  }
+
+  .cta-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    color: var(--gray);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-title {
+    font-size: clamp(36px, 5vw, 72px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+    margin-bottom: 48px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cta-title .outline {
+    -webkit-text-stroke: 1px white;
+    color: transparent;
+  }
+
+  .cta-btn {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    padding: 18px 48px;
+    background: white;
+    color: black;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s;
+  }
+  .cta-btn:hover { transform: scale(1.02); }
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 48px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-logo {
+    font-weight: 800;
+    font-size: 16px;
+    letter-spacing: -0.03em;
+  }
+  .footer-logo span { color: var(--gray); }
+
+  .footer-copy {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: 0.05em;
+  }
+
+  .scroll-indicator {
+    position: absolute;
+    bottom: 40px;
+    left: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    animation: slideUp 0.8s 1.4s cubic-bezier(.23,1,.32,1) forwards;
+  }
+
+  .scroll-line {
+    width: 40px;
+    height: 1px;
+    background: rgba(255,255,255,0.2);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .scroll-line::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%;
+    width: 100%; height: 100%;
+    background: white;
+    animation: scrollAnim 2s ease-in-out infinite;
+  }
+
+  @keyframes scrollAnim {
+    0% { left: -100%; }
+    100% { left: 100%; }
+  }
+
+  .scroll-text {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    color: var(--gray);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .intersect {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(.23,1,.32,1), transform 0.8s cubic-bezier(.23,1,.32,1);
+  }
+  .intersect.visible {
+    opacity: 1;
+    transform: none;
+  }
+</style>
+</head>
+<body>
+
+
+
+<nav>
+  <a href="#" class="logo">Chartr<span>.</span></a>
+  <ul class="nav-links">
+    <li><a href="#">Product</a></li>
+    <li><a href="#">Docs</a></li>
+    <li><a href="#">Pricing</a></li>
+  </ul>
+  <button class="nav-cta">Get Started</button>
+</nav>
+
+<section class="hero">
+  <div class="hero-grid"></div>
+
+  <p class="hero-label">Data Visualization Platform</p>
+
+  <h1 class="hero-title">
+    <span class="line"><span>Turn raw</span></span>
+    <span class="line"><span>data into</span></span>
+    <span class="line"><span class="outline">clarity.</span></span>
+  </h1>
+
+  <p class="hero-sub">Voer je data in, wij berekenen en visualiseren — real-time, clean, en altijd bruikbaar.</p>
+
+  <div class="hero-actions">
+    <button class="btn-primary"><span>Start gratis</span></button>
+    <a href="#" class="btn-link">Bekijk demo →</a>
+  </div>
+
+  <div class="hero-visual">
+    <div class="chart-card">
+      <div class="chart-header">
+        <span class="chart-title">Revenue / kwartaal</span>
+        <span class="chart-value">€84.2K</span>
+      </div>
+      <canvas id="liveChart" width="332" height="120"></canvas>
+      <div class="chart-tags">
+        <span class="tag">+18.4%</span>
+        <span class="tag">YoY</span>
+        <span class="tag">Live</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="scroll-indicator">
+    <div class="scroll-line"></div>
+    <span class="scroll-text">Scroll</span>
+  </div>
+</section>
+
+<div class="ticker-wrap">
+  <div class="ticker">
+    <span class="ticker-item">Lijngrafieken<span>→</span></span>
+    <span class="ticker-item">Staafdiagrammen<span>→</span></span>
+    <span class="ticker-item">Scatter plots<span>→</span></span>
+    <span class="ticker-item">Heatmaps<span>→</span></span>
+    <span class="ticker-item">Treemaps<span>→</span></span>
+    <span class="ticker-item">Real-time data<span>→</span></span>
+    <span class="ticker-item">CSV import<span>→</span></span>
+    <span class="ticker-item">API connectie<span>→</span></span>
+    <span class="ticker-item">Lijngrafieken<span>→</span></span>
+    <span class="ticker-item">Staafdiagrammen<span>→</span></span>
+    <span class="ticker-item">Scatter plots<span>→</span></span>
+    <span class="ticker-item">Heatmaps<span>→</span></span>
+    <span class="ticker-item">Treemaps<span>→</span></span>
+    <span class="ticker-item">Real-time data<span>→</span></span>
+    <span class="ticker-item">CSV import<span>→</span></span>
+    <span class="ticker-item">API connectie<span>→</span></span>
+  </div>
+</div>
+
+<div class="stats-bar">
+  <div class="stat-item">
+    <div class="stat-num">40+</div>
+    <div class="stat-label">Grafiek types</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">1M+</div>
+    <div class="stat-label">Datapunten/sec</div>
+  </div>
+  <div class="stat-item">
+    <div class="stat-num">0.3s</div>
+    <div class="stat-label">Gem. render tijd</div>
+  </div>
+</div>
+
+<section class="features">
+  <div class="section-tag">Functies</div>
+  <div class="features-grid intersect">
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      </div>
+      <h3 class="feature-title">Real-time streaming</h3>
+      <p class="feature-desc">Data vloeit direct binnen — geen refresh nodig. Je ziet veranderingen terwijl ze plaatsvinden.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      </div>
+      <h3 class="feature-title">Modulair dashboard</h3>
+      <p class="feature-desc">Sleep grafieken naar positie. Combineer datasets. Maak je ideale weergave in seconden.</p>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+      </div>
+      <h3 class="feature-title">Deel & exporteer</h3>
+      <p class="feature-desc">Exporteer naar SVG, PNG of PDF. Of deel met een link — interactief, in real-time.</p>
+    </div>
+  </div>
+</section>
+
+<section class="demo">
+  <div class="demo-inner intersect">
+    <div>
+      <h2 class="demo-title">Voer data in.<br>Zie het leven.</h2>
+      <p class="demo-desc">Type getallen, plak een CSV of koppel je API — Chartr berekent patronen, trends en uitschieters automatisch.</p>
+      <div class="input-row">
+        <input class="demo-input" type="text" placeholder="bijv. 12, 45, 28, 67, 33, 91, 54" id="dataInput">
+        <button class="demo-btn" onclick="updateBars()">Visualiseer</button>
+      </div>
+      <p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray);">Geef komma-gescheiden waarden op</p>
+    </div>
+    <div class="bar-chart-demo">
+      <div class="bars" id="bars"></div>
+      <div class="bar-values" id="barVals"></div>
+    </div>
+  </div>
+</section>
+
+<section class="cta-section intersect">
+  <p class="cta-label">Klaar om te starten?</p>
+  <h2 class="cta-title">Data heeft<br><span class="outline">een verhaal.</span></h2>
+  <br><br>
+  <button class="cta-btn">Begin gratis — geen creditcard</button>
+</section>
+
+<footer>
+  <span class="footer-logo">Chartr<span>.</span></span>
+  <span class="footer-copy">© 2025 Chartr — Alle rechten voorbehouden</span>
+</footer>
+
+<script>
+
+  const canvas = document.getElementById('liveChart');
+  const ctx = canvas.getContext('2d');
+  canvas.width = 332; canvas.height = 120;
+  let points = [];
+  let frame = 0;
+
+  // Fetch live data from API
+  async function fetchLiveData() {
+    try {
+      const res = await fetch('/api/data');
+      const json = await res.json();
+      if (json.success && json.data) {
+        return json.data.map(d => d.value);
+      }
+    } catch (e) {
+      console.warn('API not available, using fallback data');
+    }
+    // Fallback data if API not available
+    return Array.from({length: 32}, (_, i) => 30 + Math.sin(i * 0.5) * 20 + Math.random() * 15);
+  }
+
+  // Initialize with data
+  fetchLiveData().then(data => {
+    points = data;
+    drawChart();
+  });
+
+  function drawChart() {
+    ctx.clearRect(0, 0, 332, 120);
+    const min = Math.min(...points), max = Math.max(...points);
+    const scaleY = v => 110 - ((v - min) / (max - min + 1)) * 100;
+
+    ctx.beginPath();
+    ctx.moveTo(0, scaleY(points[0]));
+    for (let i = 1; i < points.length; i++) {
+      const x = (i / (points.length - 1)) * 332;
+      const xp = ((i - 1) / (points.length - 1)) * 332;
+      const cp1x = xp + (x - xp) / 2, cp1y = scaleY(points[i - 1]);
+      const cp2x = xp + (x - xp) / 2, cp2y = scaleY(points[i]);
+      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, scaleY(points[i]));
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.lineTo(332, 120); ctx.lineTo(0, 120); ctx.closePath();
+    const grad = ctx.createLinearGradient(0, 0, 0, 120);
+    grad.addColorStop(0, 'rgba(255,255,255,0.08)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    const dot = { x: 332, y: scaleY(points[points.length - 1]) };
+    ctx.beginPath();
+    ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2);
+    ctx.fillStyle = 'white';
+    ctx.fill();
+
+    frame++;
+    if (frame % 60 === 0) {
+      points.push(30 + Math.sin(points.length * 0.5) * 20 + Math.random() * 25);
+      if (points.length > 40) points.shift();
+    }
+    requestAnimationFrame(drawChart);
+  }
+  drawChart();
+
+  const defaultData = [42, 68, 31, 85, 54, 73, 29];
+  const labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+  function buildBars(data) {
+    const barsEl = document.getElementById('bars');
+    const valsEl = document.getElementById('barVals');
+    const max = Math.max(...data);
+    barsEl.innerHTML = '';
+    valsEl.innerHTML = '';
+    data.forEach((v, i) => {
+      const bar = document.createElement('div');
+      bar.className = 'bar';
+      bar.style.height = '0px';
+      bar.setAttribute('data-label', labels[i] || String.fromCharCode(65 + i));
+      barsEl.appendChild(bar);
+      setTimeout(() => { bar.style.height = ((v / max) * 140) + 'px'; }, 80 + i * 60);
+      const bv = document.createElement('div');
+      bv.className = 'bv';
+      bv.textContent = v;
+      valsEl.appendChild(bv);
+    });
+  }
+
+  function updateBars() {
+    const raw = document.getElementById('dataInput').value;
+    const nums = raw.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+    if (nums.length > 0) {
+      // Send to API for processing
+      fetch('/api/chart', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: nums })
+      })
+      .then(res => res.json())
+      .then(response => {
+        if (response.success) {
+          console.log('Stats:', response.stats);
+        }
+      })
+      .catch(console.error);
+      
+      buildBars(nums);
+    }
+  }
+
+  buildBars(defaultData);
+
+  const io = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.intersect').forEach(el => io.observe(el));
+</script>
+</body>
+</html>
