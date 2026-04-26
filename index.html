@@ -1,978 +1,1686 @@
 <!DOCTYPE html>
-<html lang="nl">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Chartr — Data Visualization</title>
+<title>Xylanthen — Data Visualization Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --black: #0a0a0a;
-    --white: #f5f5f0;
-    --gray: #888;
-    --border: rgba(255,255,255,0.08);
-    --accent: #ffffff;
-  }
-
-  html { scroll-behavior: smooth; }
-
-  body {
-    background: var(--black);
-    color: var(--white);
-    font-family: 'Syne', sans-serif;
-    overflow-x: hidden;
-  }
-
-  nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 24px 48px;
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(20px);
-    background: rgba(10,10,10,0.6);
-    animation: fadeDown 0.8s cubic-bezier(.23,1,.32,1) both;
-  }
-
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .logo {
-    font-size: 20px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: white;
-    text-decoration: none;
-  }
-
-  .logo span { color: var(--gray); }
-
-  .nav-links {
-    display: flex;
-    gap: 40px;
-    list-style: none;
-  }
-
-  .nav-links a {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.08em;
-    color: var(--gray);
-    text-decoration: none;
-    text-transform: uppercase;
-    transition: color 0.2s;
-  }
-  .nav-links a:hover { color: white; }
-
-  .nav-cta {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.05em;
-    padding: 10px 22px;
-    border: 1px solid rgba(255,255,255,0.3);
-    color: white;
-    background: transparent;
-    transition: background 0.2s, border-color 0.2s;
-    text-transform: uppercase;
-    cursor: pointer;
-  }
-  .nav-cta:hover { background: white; color: black; border-color: white; }
-
-  .hero {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    padding: 140px 48px 80px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .hero-grid {
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
-    animation: gridFade 1.5s ease both;
-  }
-
-  @keyframes gridFade {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  .hero-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    color: var(--gray);
-    text-transform: uppercase;
-    margin-bottom: 32px;
-    opacity: 0;
-    animation: slideUp 0.8s 0.3s cubic-bezier(.23,1,.32,1) forwards;
-  }
-
-  .hero-label::before {
-    content: '';
-    display: inline-block;
-    width: 24px;
-    height: 1px;
-    background: var(--gray);
-    vertical-align: middle;
-    margin-right: 12px;
-  }
-
-  .hero-title {
-    font-size: clamp(52px, 8vw, 120px);
-    font-weight: 800;
-    line-height: 0.92;
-    letter-spacing: -0.04em;
-    max-width: 900px;
-    margin-bottom: 40px;
-  }
-
-  .hero-title .line {
-    display: block;
-    overflow: hidden;
-  }
-
-  .hero-title .line span {
-    display: block;
-    opacity: 0;
-    transform: translateY(100%);
-    animation: lineReveal 0.9s cubic-bezier(.23,1,.32,1) forwards;
-  }
-
-  .hero-title .line:nth-child(1) span { animation-delay: 0.4s; }
-  .hero-title .line:nth-child(2) span { animation-delay: 0.55s; }
-  .hero-title .line:nth-child(3) span { animation-delay: 0.7s; }
-
-  @keyframes lineReveal {
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .hero-title .outline {
-    -webkit-text-stroke: 1px white;
-    color: transparent;
-  }
-
-  .hero-sub {
-    font-family: 'DM Mono', monospace;
-    font-size: 14px;
-    color: var(--gray);
-    max-width: 440px;
-    line-height: 1.7;
-    opacity: 0;
-    animation: slideUp 0.8s 0.9s cubic-bezier(.23,1,.32,1) forwards;
-  }
-
-  @keyframes slideUp {
-    from { opacity: 0; transform: translateY(24px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .hero-actions {
-    display: flex;
-    align-items: center;
-    gap: 32px;
-    margin-top: 48px;
-    opacity: 0;
-    animation: slideUp 0.8s 1.1s cubic-bezier(.23,1,.32,1) forwards;
-  }
-
-  .btn-primary {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    letter-spacing: 0.05em;
-    padding: 16px 36px;
-    background: white;
-    color: black;
-    border: none;
-    text-transform: uppercase;
-    position: relative;
-    overflow: hidden;
-    transition: transform 0.2s;
-    cursor: pointer;
-  }
-  .btn-primary::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: black;
-    transform: translateY(100%);
-    transition: transform 0.3s cubic-bezier(.23,1,.32,1);
-  }
-  .btn-primary:hover::after { transform: translateY(0); }
-  .btn-primary span { position: relative; z-index: 1; }
-  .btn-primary:hover span { color: white; }
-
-  .btn-link {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--gray);
-    text-decoration: none;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    border-bottom: 1px solid rgba(255,255,255,0.2);
-    padding-bottom: 2px;
-    transition: color 0.2s, border-color 0.2s;
-  }
-  .btn-link:hover { color: white; border-color: white; }
-
-  .hero-visual {
-    position: absolute;
-    right: 48px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 380px;
-    opacity: 0;
-    animation: slideUp 1s 1.2s cubic-bezier(.23,1,.32,1) forwards;
-  }
-
-  .chart-card {
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,0.02);
-    padding: 24px;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .chart-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    animation: shimmer 3s infinite;
-  }
-
-  @keyframes shimmer {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
-  }
-
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-  }
-
-  .chart-title {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--gray);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .chart-value {
-    font-size: 22px;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-  }
-
-  canvas#liveChart { width: 100%; height: 120px; }
-
-  .chart-tags {
-    display: flex;
-    gap: 8px;
-    margin-top: 16px;
-  }
-
-  .tag {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.08em;
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    color: var(--gray);
-    text-transform: uppercase;
-  }
-
-  .stats-bar {
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    padding: 0 48px;
-  }
-
-  .stat-item {
-    padding: 40px 0;
-    border-right: 1px solid var(--border);
-    opacity: 0;
-    animation: slideUp 0.8s cubic-bezier(.23,1,.32,1) forwards;
-  }
-  .stat-item:last-child { border-right: none; }
-  .stat-item:nth-child(1) { animation-delay: 1.3s; padding-right: 40px; }
-  .stat-item:nth-child(2) { animation-delay: 1.45s; padding: 40px 40px; }
-  .stat-item:nth-child(3) { animation-delay: 1.6s; padding-left: 40px; }
-
-  .stat-num {
-    font-size: 42px;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-
-  .stat-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--gray);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-  }
-
-  .features {
-    padding: 120px 48px;
-  }
-
-  .section-tag {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    color: var(--gray);
-    text-transform: uppercase;
-    margin-bottom: 64px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .section-tag::after {
-    content: '';
-    flex: 1;
-    max-width: 120px;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .features-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1px;
-    border: 1px solid var(--border);
-  }
-
-  .feature-card {
-    padding: 40px;
-    border-right: 1px solid var(--border);
-    position: relative;
-    overflow: hidden;
-    transition: background 0.3s;
-  }
-  .feature-card:last-child { border-right: none; }
-
-  .feature-card::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: rgba(255,255,255,0.03);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .feature-card:hover::after { opacity: 1; }
-
-  .feature-icon {
-    width: 40px;
-    height: 40px;
-    border: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 28px;
-  }
-
-  .feature-icon svg { width: 18px; height: 18px; stroke: white; fill: none; stroke-width: 1.5; }
-
-  .feature-title {
-    font-size: 18px;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    margin-bottom: 12px;
-  }
-
-  .feature-desc {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--gray);
-    line-height: 1.8;
-  }
-
-  .demo {
-    padding: 0 48px 120px;
-  }
-
-  .demo-inner {
-    border: 1px solid var(--border);
-    padding: 64px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 80px;
-    align-items: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .demo-inner::before {
-    content: '';
-    position: absolute;
-    top: -1px; left: 0; right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-  }
-
-  .demo-title {
-    font-size: 40px;
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    line-height: 1.1;
-    margin-bottom: 20px;
-  }
-
-  .demo-desc {
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    color: var(--gray);
-    line-height: 1.8;
-    margin-bottom: 32px;
-  }
-
-  .input-row {
-    display: flex;
-    gap: 0;
-    margin-bottom: 16px;
-  }
-
-  .demo-input {
-    flex: 1;
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.15);
-    border-right: none;
-    color: white;
-    padding: 14px 18px;
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-  .demo-input:focus { border-color: rgba(255,255,255,0.4); }
-  .demo-input::placeholder { color: rgba(255,255,255,0.25); }
-
-  .demo-btn {
-    background: white;
-    color: black;
-    border: none;
-    padding: 14px 24px;
-    font-family: 'DM Mono', monospace;
-    font-size: 12px;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: opacity 0.2s;
-  }
-  .demo-btn:hover { opacity: 0.85; }
-
-  .bars {
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    height: 160px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .bar {
-    flex: 1;
-    background: white;
-    transition: height 0.6s cubic-bezier(.23,1,.32,1);
-    position: relative;
-  }
-
-  .bar::after {
-    content: attr(data-label);
-    position: absolute;
-    bottom: -22px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-family: 'DM Mono', monospace;
-    font-size: 9px;
-    color: var(--gray);
-    white-space: nowrap;
-  }
-
-  .bar-values {
-    display: flex;
-    gap: 8px;
-    margin-top: 32px;
-  }
-
-  .bv {
-    flex: 1;
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--gray);
-    text-align: center;
-  }
-
-  .ticker-wrap {
-    overflow: hidden;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 0;
-  }
-
-  .ticker {
-    display: flex;
-    gap: 80px;
-    animation: ticker 20s linear infinite;
-    white-space: nowrap;
-  }
-
-  @keyframes ticker {
-    from { transform: translateX(0); }
-    to { transform: translateX(-50%); }
-  }
-
-  .ticker-item {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--gray);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    flex-shrink: 0;
-  }
-
-  .ticker-item span { color: white; margin-left: 8px; }
-
-  .cta-section {
-    padding: 120px 48px;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-  }
-
-  .cta-section::before {
-    content: '';
-    position: absolute;
-    width: 600px; height: 600px;
-    border: 1px solid var(--border);
-    border-radius: 50%;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    animation: pulse 4s ease-in-out infinite;
-  }
-  .cta-section::after {
-    content: '';
-    position: absolute;
-    width: 900px; height: 900px;
-    border: 1px solid rgba(255,255,255,0.03);
-    border-radius: 50%;
-    top: 50%; left: 50%;
-    transform: translate(-50%, -50%);
-    animation: pulse 4s 1s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.5; }
-  }
-
-  .cta-label {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    color: var(--gray);
-    text-transform: uppercase;
-    margin-bottom: 24px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .cta-title {
-    font-size: clamp(36px, 5vw, 72px);
-    font-weight: 800;
-    letter-spacing: -0.04em;
-    line-height: 0.95;
-    margin-bottom: 48px;
-    position: relative;
-    z-index: 1;
-  }
-
-  .cta-title .outline {
-    -webkit-text-stroke: 1px white;
-    color: transparent;
-  }
-
-  .cta-btn {
-    font-family: 'DM Mono', monospace;
-    font-size: 13px;
-    letter-spacing: 0.05em;
-    padding: 18px 48px;
-    background: white;
-    color: black;
-    border: none;
-    cursor: pointer;
-    text-transform: uppercase;
-    position: relative;
-    z-index: 1;
-    transition: transform 0.2s;
-  }
-  .cta-btn:hover { transform: scale(1.02); }
-
-  footer {
-    border-top: 1px solid var(--border);
-    padding: 32px 48px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .footer-logo {
-    font-weight: 800;
-    font-size: 16px;
-    letter-spacing: -0.03em;
-  }
-  .footer-logo span { color: var(--gray); }
-
-  .footer-copy {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px;
-    color: var(--gray);
-    letter-spacing: 0.05em;
-  }
-
-  .scroll-indicator {
-    position: absolute;
-    bottom: 40px;
-    left: 48px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    opacity: 0;
-    animation: slideUp 0.8s 1.4s cubic-bezier(.23,1,.32,1) forwards;
-  }
-
-  .scroll-line {
-    width: 40px;
-    height: 1px;
-    background: rgba(255,255,255,0.2);
-    position: relative;
-    overflow: hidden;
-  }
-
-  .scroll-line::after {
-    content: '';
-    position: absolute;
-    top: 0; left: -100%;
-    width: 100%; height: 100%;
-    background: white;
-    animation: scrollAnim 2s ease-in-out infinite;
-  }
-
-  @keyframes scrollAnim {
-    0% { left: -100%; }
-    100% { left: 100%; }
-  }
-
-  .scroll-text {
-    font-family: 'DM Mono', monospace;
-    font-size: 10px;
-    color: var(--gray);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-  }
-
-  .intersect {
-    opacity: 0;
-    transform: translateY(30px);
-    transition: opacity 0.8s cubic-bezier(.23,1,.32,1), transform 0.8s cubic-bezier(.23,1,.32,1);
-  }
-  .intersect.visible {
-    opacity: 1;
-    transform: none;
-  }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --black: #0a0a0a;
+  --white: #f5f5f0;
+  /* WCAG-AA compliant grays - lifted from #888 to #aaa for body text, #ccc for labels */
+  --gray: #aaa;
+  --gray-muted: #777;
+  --gray-dark: #555;
+  --gray-light: #ccc;
+  --border: rgba(255,255,255,0.09);
+  --border-hover: rgba(255,255,255,0.2);
+  --focus-ring: 0 0 0 2px rgba(255,255,255,0.8);
+  --accent: #ffffff;
+  --error: rgba(255,120,120,0.95);
+  --error-bg: rgba(255,0,0,0.06);
+  --error-border: rgba(255,100,100,0.35);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--black);
+  color: var(--white);
+  font-family: 'Syne', sans-serif;
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* ── ACCESSIBILITY: Focus-visible ── */
+:focus { outline: none; }
+:focus-visible { outline: none; box-shadow: var(--focus-ring); }
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible,
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+.tab-btn:focus-visible { box-shadow: inset 0 -2px 0 white, var(--focus-ring); }
+
+/* ── NAV ── */
+nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 48px;
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(20px);
+  background: rgba(10,10,10,0.92);
+}
+.logo {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+}
+.logo span { color: var(--gray-muted); }
+.nav-links { display: flex; gap: 32px; list-style: none; }
+.nav-links a {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--gray);
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: color 0.2s;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+.nav-links a:hover, .nav-links a.active { color: white; }
+
+/* ── PAGE SYSTEM ── */
+.page-section { display: none; padding-top: 80px; min-height: 100vh; }
+.page-section.active { display: block; }
+
+/* ── HERO ── */
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 120px 48px 80px;
+  position: relative;
+  overflow: hidden;
+}
+.hero-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+}
+.hero-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  color: var(--gray);
+  text-transform: uppercase;
+  margin-bottom: 32px;
+  opacity: 0;
+  animation: slideUp 0.8s 0.3s cubic-bezier(.23,1,.32,1) forwards;
+}
+.hero-label::before {
+  content: '';
+  display: inline-block;
+  width: 24px; height: 1px;
+  background: var(--gray-muted);
+  vertical-align: middle;
+  margin-right: 12px;
+}
+.hero-title {
+  font-size: clamp(52px, 8vw, 120px);
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  max-width: 900px;
+  margin-bottom: 40px;
+}
+.hero-title .line { display: block; overflow: hidden; }
+.hero-title .line span {
+  display: block; opacity: 0; transform: translateY(100%);
+  animation: lineReveal 0.9s cubic-bezier(.23,1,.32,1) forwards;
+}
+.hero-title .line:nth-child(1) span { animation-delay: 0.4s; }
+.hero-title .line:nth-child(2) span { animation-delay: 0.55s; }
+.hero-title .line:nth-child(3) span { animation-delay: 0.7s; }
+@keyframes lineReveal { to { opacity: 1; transform: translateY(0); } }
+.hero-title .outline { -webkit-text-stroke: 1px white; color: transparent; }
+.hero-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 14px;
+  color: var(--gray);
+  max-width: 480px;
+  line-height: 1.7;
+  opacity: 0;
+  animation: slideUp 0.8s 0.9s cubic-bezier(.23,1,.32,1) forwards;
+}
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.hero-actions {
+  display: flex; align-items: center; gap: 16px; margin-top: 48px;
+  opacity: 0; animation: slideUp 0.8s 1.1s cubic-bezier(.23,1,.32,1) forwards;
+}
+
+/* ── BUTTONS ── */
+.btn-primary {
+  font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.08em;
+  padding: 16px 36px; background: white; color: black; border: none;
+  text-transform: uppercase; cursor: pointer;
+  transition: transform 0.18s, background 0.18s;
+  text-decoration: none; display: inline-block;
+}
+.btn-primary:hover { transform: scale(1.02); background: #e0e0e0; }
+.btn-primary:active { transform: scale(0.99); }
+
+.btn-secondary {
+  font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.08em;
+  padding: 15px 35px; background: transparent; color: white;
+  border: 1px solid rgba(255,255,255,0.25); text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+  text-decoration: none; display: inline-block;
+}
+.btn-secondary:hover { background: white; color: black; border-color: white; }
+
+.btn-ghost {
+  font-family: 'DM Mono', monospace; font-size: 12px; letter-spacing: 0.08em;
+  padding: 15px 35px; background: transparent; color: var(--gray);
+  border: 1px solid var(--border); text-transform: uppercase;
+  cursor: pointer; transition: all 0.2s;
+  text-decoration: none; display: inline-block;
+}
+.btn-ghost:hover { color: white; border-color: rgba(255,255,255,0.3); }
+
+/* ── LOADING SPINNER ── */
+.spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid rgba(0,0,0,0.2);
+  border-top-color: black;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle; margin-right: 8px;
+}
+.spinner.light {
+  border-color: rgba(255,255,255,0.15);
+  border-top-color: white;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.btn-loading {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+/* Loading overlay for output area */
+.loading-overlay {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  min-height: 400px; gap: 16px;
+}
+.loading-overlay .spinner { width: 28px; height: 28px; border-width: 3px; }
+.loading-text {
+  font-family: 'DM Mono', monospace; font-size: 12px; color: var(--gray);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+
+/* ── TICKER ── */
+.ticker-wrap {
+  overflow: hidden;
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+}
+.ticker {
+  display: flex; gap: 80px;
+  animation: ticker 25s linear infinite;
+  white-space: nowrap;
+}
+@keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.ticker-item {
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray);
+  letter-spacing: 0.1em; text-transform: uppercase; flex-shrink: 0;
+}
+.ticker-item span { color: white; margin-left: 8px; }
+
+/* ── STATS BAR ── */
+.stats-bar {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.stat-item { padding: 48px; border-right: 1px solid var(--border); }
+.stat-item:last-child { border-right: none; }
+.stat-num { font-size: 48px; font-weight: 800; letter-spacing: -0.04em; line-height: 1; margin-bottom: 8px; }
+.stat-label {
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+
+/* ── SECTIONS ── */
+.section { padding: 100px 48px; border-bottom: 1px solid var(--border); }
+.section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 48px; }
+.section-title { font-size: clamp(32px, 5vw, 48px); font-weight: 800; letter-spacing: -0.04em; }
+.section-subtitle {
+  font-family: 'DM Mono', monospace; font-size: 12px; color: var(--gray);
+  max-width: 380px; line-height: 1.6;
+}
+
+/* ── FEATURES ── */
+.features-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  border: 1px solid var(--border);
+}
+.feature-item {
+  padding: 40px;
+  border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+}
+.feature-item:nth-child(3n) { border-right: none; }
+.feature-item:nth-last-child(-n+3) { border-bottom: none; }
+.feature-num { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray-muted); letter-spacing: 0.15em; margin-bottom: 20px; }
+.feature-name { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }
+.feature-desc { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--gray); line-height: 1.7; }
+
+/* ── FOOTER ── */
+footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex; justify-content: space-between; align-items: center; }
+.footer-logo { font-weight: 800; font-size: 16px; letter-spacing: -0.03em; }
+.footer-logo span { color: var(--gray-muted); }
+.footer-copy { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray); letter-spacing: 0.05em; }
+
+/* ── DASHBOARD ── */
+.dashboard-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+  margin-bottom: 48px;
+}
+.charts-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+.chart-card {
+  border: 1px solid var(--border); background: rgba(255,255,255,0.015);
+  padding: 28px; transition: border-color 0.2s;
+}
+.chart-card:hover { border-color: var(--border-hover); }
+.chart-card.full-width { grid-column: 1 / -1; }
+.chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.chart-title {
+  font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+.chart-value { font-size: 22px; font-weight: 800; letter-spacing: -0.03em; }
+.chart-container { height: 240px; position: relative; }
+
+/* LIVE INDICATOR */
+.live-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--gray);
+  letter-spacing: 0.1em; text-transform: uppercase;
+}
+.live-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: white;
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 0%,100% { opacity:1; transform:scale(1); } 50% { opacity:0.4; transform:scale(0.7); } }
+
+/* ── API CONNECT MODAL ── */
+.api-modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85); z-index: 200;
+  align-items: center; justify-content: center;
+}
+.api-modal-overlay.open { display: flex; }
+.api-modal {
+  background: #111; border: 1px solid rgba(255,255,255,0.15);
+  padding: 40px; width: min(480px, 90vw); position: relative;
+}
+.api-modal-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; }
+.api-modal-sub { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--gray); line-height: 1.6; margin-bottom: 24px; }
+.api-modal-close {
+  position: absolute; top: 16px; right: 20px;
+  background: none; border: none; color: var(--gray); cursor: pointer;
+  font-size: 20px; font-family: 'DM Mono', monospace; line-height: 1;
+  transition: color 0.2s;
+}
+.api-modal-close:hover { color: white; }
+.api-modal .form-group { margin-bottom: 16px; }
+.api-modal-actions { display: flex; gap: 12px; margin-top: 24px; }
+
+/* ── ANALYZER LAYOUT ── */
+.analyzer-layout { display: grid; grid-template-columns: 380px 1fr; gap: 24px; align-items: start; }
+.analyzer-panel {
+  border: 1px solid var(--border); background: rgba(255,255,255,0.015);
+  padding: 28px; position: sticky; top: 100px;
+}
+.panel-section {
+  margin-bottom: 28px; padding-bottom: 28px; border-bottom: 1px solid var(--border);
+}
+.panel-section:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+.panel-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--gray);
+  text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 12px;
+}
+
+/* FORMS */
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block; font-family: 'DM Mono', monospace; font-size: 10px;
+  color: var(--gray); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px;
+}
+.form-group select,
+.form-group input,
+.form-group textarea {
+  width: 100%; background: transparent;
+  border: 1px solid rgba(255,255,255,0.14);
+  color: white; padding: 12px 16px;
+  font-family: 'DM Mono', monospace; font-size: 12px;
+  outline: none; transition: border-color 0.2s;
+  appearance: none;
+}
+.form-group select:focus,
+.form-group input:focus,
+.form-group textarea:focus { border-color: rgba(255,255,255,0.4); }
+.form-group select {
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23aaa' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 14px center; background-color: transparent;
+}
+.form-group select option { background: #1a1a1a; color: white; }
+.form-group textarea { min-height: 80px; resize: vertical; line-height: 1.5; }
+
+/* DATA CLEANING TOGGLE */
+.toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.toggle-row:last-child { border-bottom: none; }
+.toggle-label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray-light); }
+.toggle-switch { position: relative; width: 32px; height: 18px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: rgba(255,255,255,0.12); border-radius: 9px;
+  transition: background 0.2s; cursor: pointer;
+}
+.toggle-switch input:checked + .toggle-track { background: rgba(255,255,255,0.7); }
+.toggle-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: white; transition: transform 0.2s;
+  pointer-events: none;
+}
+.toggle-switch input:checked ~ .toggle-thumb { transform: translateX(14px); }
+
+/* CHART TYPE SELECTOR */
+.chart-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.chart-type-btn {
+  padding: 10px 8px; border: 1px solid var(--border); background: transparent;
+  color: var(--gray); font-family: 'DM Mono', monospace; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.05em;
+  cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.chart-type-btn:hover { border-color: rgba(255,255,255,0.3); color: white; }
+.chart-type-btn.active { background: white; color: black; border-color: white; }
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 1px dashed rgba(255,255,255,0.2); padding: 28px 20px;
+  text-align: center; cursor: pointer; transition: all 0.2s; position: relative;
+}
+.upload-zone:hover { border-color: rgba(255,255,255,0.45); background: rgba(255,255,255,0.02); }
+.upload-zone.drag-over { border-color: white; background: rgba(255,255,255,0.05); }
+.upload-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.upload-icon { font-size: 28px; margin-bottom: 10px; color: var(--gray); }
+.upload-text { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray); line-height: 1.6; }
+.upload-text strong { color: var(--gray-light); }
+
+/* ANALYSIS OUTPUT */
+.analysis-output {
+  border: 1px solid var(--border); background: rgba(255,255,255,0.015); padding: 28px;
+}
+.analysis-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.analysis-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.analysis-header-right { display: flex; gap: 8px; align-items: center; }
+
+/* STATS TABLE */
+.stats-table {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; background: var(--border);
+  border: 1px solid var(--border); margin-bottom: 28px;
+}
+.stats-cell { background: var(--black); padding: 20px; }
+.stats-cell-label {
+  font-family: 'DM Mono', monospace; font-size: 10px; color: var(--gray);
+  text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px;
+}
+.stats-cell-value { font-size: 20px; font-weight: 700; letter-spacing: -0.03em; }
+
+/* Mobile stats-table → card list */
+@media (max-width: 500px) {
+  .stats-table { display: flex; flex-direction: column; gap: 0; background: transparent; border: none; }
+  .stats-cell {
+    border: 1px solid var(--border); margin-bottom: 4px;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 16px;
+  }
+  .stats-cell-label { margin-bottom: 0; }
+  .stats-cell-value { font-size: 16px; }
+}
+
+/* QUARTILE VIZ */
+.quartile-bar-wrap { margin-bottom: 28px; }
+.quartile-labels { display: flex; justify-content: space-between; margin-bottom: 6px; }
+.quartile-label { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--gray); text-transform: uppercase; }
+.quartile-bar { height: 32px; display: flex; gap: 2px; margin-bottom: 4px; }
+.quartile-seg {
+  height: 100%; display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Mono', monospace; font-size: 10px; font-weight: 500;
+  transition: opacity 0.2s; min-width: 8px; cursor: help;
+}
+.quartile-seg:hover { opacity: 0.8; }
+.quartile-seg.q1 { background: rgba(255,255,255,0.22); color: rgba(255,255,255,0.75); }
+.quartile-seg.q2 { background: rgba(255,255,255,0.48); color: rgba(255,255,255,0.95); }
+.quartile-seg.q3 { background: rgba(255,255,255,0.72); color: rgba(0,0,0,0.75); }
+.quartile-seg.q4 { background: rgba(255,255,255,0.94); color: rgba(0,0,0,0.9); }
+
+/* DISTRIBUTION */
+.dist-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; margin-bottom: 8px; }
+.dist-bar { flex: 1; background: rgba(255,255,255,0.5); transition: background 0.2s; min-height: 2px; position: relative; }
+.dist-bar:hover { background: white; }
+.dist-bar-tooltip {
+  display: none; position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%); background: white; color: black;
+  font-family: 'DM Mono', monospace; font-size: 10px; padding: 4px 8px;
+  white-space: nowrap; margin-bottom: 4px; z-index: 10; pointer-events: none;
+}
+.dist-bar:hover .dist-bar-tooltip { display: block; }
+
+/* OUTLIER LIST */
+.outlier-list { display: flex; flex-wrap: wrap; gap: 6px; }
+.outlier-tag {
+  font-family: 'DM Mono', monospace; font-size: 11px; padding: 4px 10px;
+  border: 1px solid rgba(255,255,255,0.2); color: var(--gray-light);
+}
+.outlier-tag.high { border-color: rgba(255,255,255,0.55); color: white; }
+
+/* CHART OUTPUT */
+.output-chart-wrap { border: 1px solid var(--border); padding: 20px; margin-bottom: 20px; }
+.output-chart-wrap .chart-container { height: 320px; }
+
+/* DATA TABLE */
+.data-table-wrap { border: 1px solid var(--border); overflow: auto; max-height: 320px; }
+.data-table { width: 100%; border-collapse: collapse; font-family: 'DM Mono', monospace; font-size: 12px; }
+.data-table th {
+  background: rgba(255,255,255,0.04); color: var(--gray); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.08em;
+  padding: 12px 16px; border-bottom: 1px solid var(--border); text-align: left;
+  position: sticky; top: 0; z-index: 1;
+}
+.data-table td { padding: 10px 16px; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--gray-light); }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,0.025); color: white; }
+
+/* EMPTY STATE */
+.empty-state {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 400px; text-align: center; gap: 16px;
+}
+.empty-icon { font-size: 48px; opacity: 0.25; }
+.empty-title { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; opacity: 0.45; }
+.empty-sub { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--gray); max-width: 300px; line-height: 1.6; }
+
+/* TABS */
+.tab-bar { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+.tab-btn {
+  font-family: 'DM Mono', monospace; font-size: 11px; letter-spacing: 0.08em;
+  text-transform: uppercase; padding: 14px 24px; border: none; background: transparent;
+  color: var(--gray); cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.2s; margin-bottom: -1px;
+}
+.tab-btn:hover { color: white; }
+.tab-btn.active { color: white; border-bottom-color: white; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* STATUS MESSAGES */
+.status-msg {
+  font-family: 'DM Mono', monospace; font-size: 11px;
+  padding: 10px 16px; border: 1px solid;
+  margin-top: 10px; line-height: 1.5;
+}
+.status-msg.error { border-color: var(--error-border); color: var(--error); background: var(--error-bg); }
+.status-msg.success { border-color: rgba(255,255,255,0.2); color: var(--gray-light); }
+.status-msg.info { border-color: rgba(255,255,255,0.1); color: var(--gray); background: rgba(255,255,255,0.02); }
+
+/* COLUMN PICKER */
+.col-picker { display: flex; flex-direction: column; gap: 8px; }
+.col-pick-item {
+  display: flex; align-items: center; gap: 10px; padding: 8px 12px;
+  border: 1px solid var(--border); cursor: pointer; transition: border-color 0.15s;
+}
+.col-pick-item:hover { border-color: var(--border-hover); }
+.col-pick-item input[type=radio] { accent-color: white; }
+.col-pick-item label { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--gray-light); cursor: pointer; flex: 1; }
+.col-pick-item.selected { border-color: rgba(255,255,255,0.3); }
+.col-pick-item.selected label { color: white; }
+
+/* EXPORT BUTTON GROUP */
+.export-group { display: flex; gap: 8px; flex-wrap: wrap; }
+.btn-export {
+  font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 0.06em;
+  padding: 9px 16px; background: transparent; color: var(--gray);
+  border: 1px solid var(--border); text-transform: uppercase;
+  cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-export:hover { color: white; border-color: rgba(255,255,255,0.35); }
+
+/* RESPONSIVE */
+@media (max-width: 1100px) {
+  .analyzer-layout { grid-template-columns: 1fr; }
+  .analyzer-panel { position: static; }
+}
+@media (max-width: 900px) {
+  nav { padding: 16px 24px; }
+  .section, .hero { padding: 80px 24px; }
+  .stats-bar, .dashboard-stats { grid-template-columns: repeat(2, 1fr); }
+  .charts-grid { grid-template-columns: 1fr; }
+  .features-grid { grid-template-columns: 1fr; }
+  .feature-item { border-right: none !important; }
+  .stats-table { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+  .stats-bar, .dashboard-stats { grid-template-columns: 1fr; }
+  .stat-item { border-right: none; border-bottom: 1px solid var(--border); }
+  .tab-btn { padding: 12px 14px; font-size: 10px; }
+  .analysis-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .export-group { width: 100%; }
+}
 </style>
 </head>
 <body>
 
-
+<!-- API Connect Modal -->
+<div class="api-modal-overlay" id="api-modal" role="dialog" aria-modal="true" aria-labelledby="api-modal-title">
+  <div class="api-modal">
+    <button class="api-modal-close" id="api-modal-close" aria-label="Close">&times;</button>
+    <div class="api-modal-title" id="api-modal-title">Connect Live API</div>
+    <p class="api-modal-sub">Enter a URL that returns a JSON array of numbers (or objects with a numeric field). Xylanthen will poll it every 2 seconds and stream the values into the dashboard.</p>
+    <div class="form-group">
+      <label for="api-url">Endpoint URL</label>
+      <input type="url" id="api-url" placeholder="https://example.com/api/data">
+    </div>
+    <div class="form-group">
+      <label for="api-field">Value field (leave blank if root is an array of numbers)</label>
+      <input type="text" id="api-field" placeholder="e.g. value, price, temperature">
+    </div>
+    <div id="api-status"></div>
+    <div class="api-modal-actions">
+      <button class="btn-primary" id="api-connect-btn">Connect</button>
+      <button class="btn-ghost" id="api-cancel-btn">Cancel</button>
+    </div>
+  </div>
+</div>
 
 <nav>
-  <a href="#" class="logo">Chartr<span>.</span></a>
+  <a class="logo" id="nav-logo" tabindex="0">Xylanthen<span>.</span></a>
   <ul class="nav-links">
-    <li><a href="#">Product</a></li>
-    <li><a href="#">Docs</a></li>
-    <li><a href="#">Pricing</a></li>
+    <li><a tabindex="0" class="active" id="nav-home">Home</a></li>
+    <li><a tabindex="0" id="nav-dashboard">Dashboard</a></li>
+    <li><a tabindex="0" id="nav-analyzer">Analyzer</a></li>
   </ul>
-  <button class="nav-cta">Get Started</button>
 </nav>
 
-<section class="hero">
-  <div class="hero-grid"></div>
+<!-- ═══════════════ HOME ═══════════════ -->
+<div class="page-section active" id="page-home">
+  <section class="hero">
+    <div class="hero-grid" aria-hidden="true"></div>
+    <p class="hero-label">Data Visualization Platform</p>
+    <h1 class="hero-title">
+      <span class="line"><span>Turn raw</span></span>
+      <span class="line"><span>data into</span></span>
+      <span class="line"><span class="outline">clarity.</span></span>
+    </h1>
+    <p class="hero-sub">Upload your data — CSV, JSON, or raw values — and get instant visual analysis with full statistical breakdowns. Clean, real-time, and built for professionals.</p>
+    <div class="hero-actions">
+      <a id="hero-cta-analyzer" class="btn-primary" tabindex="0" role="button">Open Analyzer</a>
+      <a id="hero-cta-dashboard" class="btn-secondary" tabindex="0" role="button">Live Dashboard</a>
+    </div>
+  </section>
 
-  <p class="hero-label">Data Visualization Platform</p>
-
-  <h1 class="hero-title">
-    <span class="line"><span>Turn raw</span></span>
-    <span class="line"><span>data into</span></span>
-    <span class="line"><span class="outline">clarity.</span></span>
-  </h1>
-
-  <p class="hero-sub">Voer je data in, wij berekenen en visualiseren — real-time, clean, en altijd bruikbaar.</p>
-
-  <div class="hero-actions">
-    <button class="btn-primary"><span>Start gratis</span></button>
-    <a href="#" class="btn-link">Bekijk demo →</a>
-  </div>
-
-  <div class="hero-visual">
-    <div class="chart-card">
-      <div class="chart-header">
-        <span class="chart-title">Revenue / kwartaal</span>
-        <span class="chart-value">€84.2K</span>
-      </div>
-      <canvas id="liveChart" width="332" height="120"></canvas>
-      <div class="chart-tags">
-        <span class="tag">+18.4%</span>
-        <span class="tag">YoY</span>
-        <span class="tag">Live</span>
-      </div>
+  <div class="ticker-wrap" aria-hidden="true">
+    <div class="ticker">
+      <span class="ticker-item">Line Charts<span>→</span></span>
+      <span class="ticker-item">Bar Charts<span>→</span></span>
+      <span class="ticker-item">Pie Charts<span>→</span></span>
+      <span class="ticker-item">Radar Charts<span>→</span></span>
+      <span class="ticker-item">CSV Import<span>→</span></span>
+      <span class="ticker-item">JSON Import<span>→</span></span>
+      <span class="ticker-item">Quartile Analysis<span>→</span></span>
+      <span class="ticker-item">Outlier Detection<span>→</span></span>
+      <span class="ticker-item">Distribution Analysis<span>→</span></span>
+      <span class="ticker-item">Export to CSV<span>→</span></span>
+      <span class="ticker-item">Line Charts<span>→</span></span>
+      <span class="ticker-item">Bar Charts<span>→</span></span>
+      <span class="ticker-item">Pie Charts<span>→</span></span>
+      <span class="ticker-item">Radar Charts<span>→</span></span>
+      <span class="ticker-item">CSV Import<span>→</span></span>
+      <span class="ticker-item">JSON Import<span>→</span></span>
     </div>
   </div>
 
-  <div class="scroll-indicator">
-    <div class="scroll-line"></div>
-    <span class="scroll-text">Scroll</span>
+  <div class="stats-bar">
+    <div class="stat-item"><div class="stat-num">7+</div><div class="stat-label">Chart Types</div></div>
+    <div class="stat-item"><div class="stat-num">∞</div><div class="stat-label">Data Points</div></div>
+    <div class="stat-item"><div class="stat-num">&lt;1s</div><div class="stat-label">Render Time</div></div>
+    <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Free</div></div>
   </div>
-</section>
 
-<div class="ticker-wrap">
-  <div class="ticker">
-    <span class="ticker-item">Lijngrafieken<span>→</span></span>
-    <span class="ticker-item">Staafdiagrammen<span>→</span></span>
-    <span class="ticker-item">Scatter plots<span>→</span></span>
-    <span class="ticker-item">Heatmaps<span>→</span></span>
-    <span class="ticker-item">Treemaps<span>→</span></span>
-    <span class="ticker-item">Real-time data<span>→</span></span>
-    <span class="ticker-item">CSV import<span>→</span></span>
-    <span class="ticker-item">API connectie<span>→</span></span>
-    <span class="ticker-item">Lijngrafieken<span>→</span></span>
-    <span class="ticker-item">Staafdiagrammen<span>→</span></span>
-    <span class="ticker-item">Scatter plots<span>→</span></span>
-    <span class="ticker-item">Heatmaps<span>→</span></span>
-    <span class="ticker-item">Treemaps<span>→</span></span>
-    <span class="ticker-item">Real-time data<span>→</span></span>
-    <span class="ticker-item">CSV import<span>→</span></span>
-    <span class="ticker-item">API connectie<span>→</span></span>
-  </div>
+  <section class="section">
+    <div class="section-header">
+      <div><h2 class="section-title">Everything you need</h2></div>
+      <p class="section-subtitle">Professional-grade analysis tools, available in your browser — no account required.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-item"><div class="feature-num">01</div><div class="feature-name">Live File Upload</div><div class="feature-desc">Drag and drop CSV or JSON files for instant parsing and visualization. Supports multi-column datasets.</div></div>
+      <div class="feature-item"><div class="feature-num">02</div><div class="feature-name">Statistical Analysis</div><div class="feature-desc">Automatic computation of mean, median, mode, standard deviation, variance, skewness, and IQR.</div></div>
+      <div class="feature-item"><div class="feature-num">03</div><div class="feature-name">Quartile Breakdown</div><div class="feature-desc">Visual Q1, Q2, Q3 quartile display with box plot-style distribution bars and fence calculations.</div></div>
+      <div class="feature-item"><div class="feature-num">04</div><div class="feature-name">Outlier Detection</div><div class="feature-desc">IQR-based outlier flagging — automatically identifies anomalous values in your dataset.</div></div>
+      <div class="feature-item"><div class="feature-num">05</div><div class="feature-name">Data Export</div><div class="feature-desc">Export your full analysis as CSV — includes z-scores, ranks, quartile flags, and computed stats.</div></div>
+      <div class="feature-item"><div class="feature-num">06</div><div class="feature-name">API Dashboard</div><div class="feature-desc">Connect a live JSON endpoint to the dashboard and stream real-time data directly into your charts.</div></div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="footer-logo">Xylanthen<span>.</span></span>
+    <span class="footer-copy">© 2025 Xylanthen — All rights reserved</span>
+  </footer>
 </div>
 
-<div class="stats-bar">
-  <div class="stat-item">
-    <div class="stat-num">40+</div>
-    <div class="stat-label">Grafiek types</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">1M+</div>
-    <div class="stat-label">Datapunten/sec</div>
-  </div>
-  <div class="stat-item">
-    <div class="stat-num">0.3s</div>
-    <div class="stat-label">Gem. render tijd</div>
-  </div>
+<!-- ═══════════════ DASHBOARD ═══════════════ -->
+<div class="page-section" id="page-dashboard">
+  <section class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Live Dashboard</h2>
+        <p class="section-subtitle">Real-time data stream — updates every 2 seconds. Connect your own API endpoint below.</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="live-badge"><div class="live-dot" aria-hidden="true"></div><span id="live-status-text">Simulated</span></div>
+        <button class="btn-ghost" id="connect-api-btn" style="padding:10px 20px">Connect API</button>
+      </div>
+    </div>
+
+    <div class="dashboard-stats stats-bar">
+      <div class="stat-item"><div class="stat-num" id="dash-count">—</div><div class="stat-label">Data Points</div></div>
+      <div class="stat-item"><div class="stat-num" id="dash-max">—</div><div class="stat-label">Peak Value</div></div>
+      <div class="stat-item"><div class="stat-num" id="dash-avg">—</div><div class="stat-label">Average</div></div>
+      <div class="stat-item"><div class="stat-num" id="dash-sum">—</div><div class="stat-label">Total</div></div>
+    </div>
+
+    <div class="charts-grid">
+      <div class="chart-card full-width">
+        <div class="chart-header">
+          <span class="chart-title">Real-time Stream</span>
+          <span class="chart-value" id="live-value">—</span>
+        </div>
+        <div class="chart-container"><canvas id="chart-live"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><span class="chart-title">Multi-Series Comparison</span></div>
+        <div class="chart-container"><canvas id="chart-multi"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header"><span class="chart-title">Radar Analysis</span></div>
+        <div class="chart-container"><canvas id="chart-radar"></canvas></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span class="footer-logo">Xylanthen<span>.</span></span>
+    <span class="footer-copy">© 2025 Xylanthen — All rights reserved</span>
+  </footer>
 </div>
 
-<section class="features">
-  <div class="section-tag">Functies</div>
-  <div class="features-grid intersect">
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+<!-- ═══════════════ ANALYZER ═══════════════ -->
+<div class="page-section" id="page-analyzer">
+  <section class="section">
+    <div class="section-header">
+      <div>
+        <h2 class="section-title">Data Analyzer</h2>
+        <p class="section-subtitle">Upload files or paste raw data. Instant charts, full statistics, quartile analysis.</p>
       </div>
-      <h3 class="feature-title">Real-time streaming</h3>
-      <p class="feature-desc">Data vloeit direct binnen — geen refresh nodig. Je ziet veranderingen terwijl ze plaatsvinden.</p>
     </div>
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      </div>
-      <h3 class="feature-title">Modulair dashboard</h3>
-      <p class="feature-desc">Sleep grafieken naar positie. Combineer datasets. Maak je ideale weergave in seconden.</p>
-    </div>
-    <div class="feature-card">
-      <div class="feature-icon">
-        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-      </div>
-      <h3 class="feature-title">Deel & exporteer</h3>
-      <p class="feature-desc">Exporteer naar SVG, PNG of PDF. Of deel met een link — interactief, in real-time.</p>
-    </div>
-  </div>
-</section>
 
-<section class="demo">
-  <div class="demo-inner intersect">
-    <div>
-      <h2 class="demo-title">Voer data in.<br>Zie het leven.</h2>
-      <p class="demo-desc">Type getallen, plak een CSV of koppel je API — Chartr berekent patronen, trends en uitschieters automatisch.</p>
-      <div class="input-row">
-        <input class="demo-input" type="text" placeholder="bijv. 12, 45, 28, 67, 33, 91, 54" id="dataInput">
-        <button class="demo-btn" onclick="updateBars()">Visualiseer</button>
+    <div class="analyzer-layout">
+      <!-- LEFT PANEL -->
+      <div class="analyzer-panel" role="complementary" aria-label="Analysis controls">
+        <div class="panel-section">
+          <div class="panel-label">Chart Type</div>
+          <div class="chart-type-grid" role="group" aria-label="Chart type selector">
+            <button class="chart-type-btn active" data-type="line">Line</button>
+            <button class="chart-type-btn" data-type="bar">Bar</button>
+            <button class="chart-type-btn" data-type="pie">Pie</button>
+            <button class="chart-type-btn" data-type="doughnut">Ring</button>
+            <button class="chart-type-btn" data-type="radar">Radar</button>
+            <button class="chart-type-btn" data-type="polarArea">Polar</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-label">Upload File</div>
+          <div class="upload-zone" id="upload-zone" role="button" aria-label="Upload CSV or JSON file">
+            <input type="file" id="file-input" accept=".csv,.json,.txt" aria-label="Choose file">
+            <div class="upload-icon" aria-hidden="true">↑</div>
+            <div class="upload-text"><strong>Click or drag file here</strong><br>Supports CSV, JSON, TXT</div>
+          </div>
+          <div id="file-status" role="status" aria-live="polite"></div>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-label">Or Paste Data</div>
+          <div class="form-group">
+            <label for="inputLabels">Labels (comma-separated)</label>
+            <input type="text" id="inputLabels" placeholder="Jan, Feb, Mar, Apr..." value="Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec">
+          </div>
+          <div class="form-group">
+            <label for="inputData">Values (comma-separated)</label>
+            <textarea id="inputData" placeholder="12, 45, 28, 67...">42, 58, 73, 65, 81, 94, 88, 76, 63, 49, 38, 55</textarea>
+          </div>
+          <button id="analyze-btn" class="btn-primary" style="width:100%">Analyze</button>
+        </div>
+
+        <div class="panel-section">
+          <div class="panel-label">Data Cleaning</div>
+          <label class="toggle-row">
+            <span class="toggle-label">Skip empty / NaN rows</span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="opt-skip-empty" checked>
+              <span class="toggle-track"></span>
+              <span class="toggle-thumb"></span>
+            </span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">Interpolate missing values</span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="opt-interpolate">
+              <span class="toggle-track"></span>
+              <span class="toggle-thumb"></span>
+            </span>
+          </label>
+          <label class="toggle-row">
+            <span class="toggle-label">Trim whitespace</span>
+            <span class="toggle-switch">
+              <input type="checkbox" id="opt-trim" checked>
+              <span class="toggle-track"></span>
+              <span class="toggle-thumb"></span>
+            </span>
+          </label>
+        </div>
+
+        <div class="panel-section" id="col-picker-section" style="display:none">
+          <div class="panel-label">Column Selection</div>
+          <div id="col-picker" class="col-picker" role="radiogroup" aria-label="Select data column"></div>
+          <button id="apply-col-btn" class="btn-secondary" style="width:100%;margin-top:12px">Apply Selection</button>
+        </div>
       </div>
-      <p style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray);">Geef komma-gescheiden waarden op</p>
-    </div>
-    <div class="bar-chart-demo">
-      <div class="bars" id="bars"></div>
-      <div class="bar-values" id="barVals"></div>
-    </div>
-  </div>
-</section>
 
-<section class="cta-section intersect">
-  <p class="cta-label">Klaar om te starten?</p>
-  <h2 class="cta-title">Data heeft<br><span class="outline">een verhaal.</span></h2>
-  <br><br>
-  <button class="cta-btn">Begin gratis — geen creditcard</button>
-</section>
+      <!-- RIGHT OUTPUT -->
+      <div id="analysis-output" role="main" aria-label="Analysis results" aria-live="polite">
+        <div class="empty-state">
+          <div class="empty-icon" aria-hidden="true">◎</div>
+          <div class="empty-title">No data yet</div>
+          <div class="empty-sub">Upload a file or paste your data on the left, then click Analyze.</div>
+        </div>
+      </div>
+    </div>
+  </section>
 
-<footer>
-  <span class="footer-logo">Chartr<span>.</span></span>
-  <span class="footer-copy">© 2025 Chartr — Alle rechten voorbehouden</span>
-</footer>
+  <footer>
+    <span class="footer-logo">Xylanthen<span>.</span></span>
+    <span class="footer-copy">© 2026 Xylanthen — All rights reserved</span>
+  </footer>
+</div>
 
 <script>
+'use strict';
 
-  const canvas = document.getElementById('liveChart');
-  const ctx = canvas.getContext('2d');
-  canvas.width = 332; canvas.height = 120;
-  let points = [];
-  let frame = 0;
+// ══════════════════════════════════════════════════
+// CHART.JS GLOBALS
+// ══════════════════════════════════════════════════
+Chart.defaults.color = '#aaa';
+Chart.defaults.font.family = "'DM Mono', monospace";
 
-  // Fetch live data from API
-  async function fetchLiveData() {
-    try {
-      const res = await fetch('/api/data');
-      const json = await res.json();
-      if (json.success && json.data) {
-        return json.data.map(d => d.value);
-      }
-    } catch (e) {
-      console.warn('API not available, using fallback data');
-    }
-    // Fallback data if API not available
-    return Array.from({length: 32}, (_, i) => 30 + Math.sin(i * 0.5) * 20 + Math.random() * 15);
+// Custom branded tooltip
+const brandedTooltip = {
+  backgroundColor: '#fff',
+  titleColor: '#000',
+  bodyColor: '#333',
+  borderColor: 'rgba(0,0,0,0)',
+  borderWidth: 0,
+  padding: 10,
+  titleFont: { family: "'DM Mono', monospace", size: 11, weight: '500' },
+  bodyFont: { family: "'DM Mono', monospace", size: 11 },
+  cornerRadius: 0,
+  displayColors: false,
+  callbacks: {
+    title: items => items[0].label,
+    label: item => `  ${Number(item.raw).toLocaleString()}`
   }
+};
 
-  // Initialize with data
-  fetchLiveData().then(data => {
-    points = data;
-    drawChart();
+const C = {
+  white: 'rgba(255,255,255,0.9)',
+  whiteFade: 'rgba(255,255,255,0.08)',
+  whiteSolid: 'rgba(255,255,255,0.85)',
+  transparent: 'transparent'
+};
+
+const gridOpts = {
+  x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#777' } },
+  y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#777' } }
+};
+
+function multiColors(n) {
+  return Array.from({length: n}, (_, i) =>
+    `rgba(255,255,255,${Math.max(0.15, 0.9 - i * (0.72 / Math.max(n - 1, 1)))})`
+  );
+}
+
+// Chart animation: bars grow from 0
+const growAnimation = {
+  duration: 700,
+  easing: 'easeOutQuart',
+  delay: ctx => ctx.dataIndex * 30
+};
+
+let charts = {};
+let currentChartType = 'line';
+let parsedCSVData = null;
+let selectedColumn = null;
+let analyzerReady = false;
+
+// ══════════════════════════════════════════════════
+// NAVIGATION (addEventListener only — no onclick in HTML)
+// ══════════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const pg = document.getElementById('page-' + id);
+  const nav = document.getElementById('nav-' + id);
+  if (pg) pg.classList.add('active');
+  if (nav) nav.classList.add('active');
+  window.scrollTo(0, 0);
+  if (id === 'dashboard' && !charts['live']) initDashboard();
+  if (id === 'analyzer' && !analyzerReady) initAnalyzer();
+}
+
+function bindNav() {
+  const ids = ['home', 'dashboard', 'analyzer'];
+  ids.forEach(id => {
+    const el = document.getElementById('nav-' + id);
+    if (!el) return;
+    el.addEventListener('click', () => showPage(id));
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') showPage(id); });
   });
 
-  function drawChart() {
-    ctx.clearRect(0, 0, 332, 120);
-    const min = Math.min(...points), max = Math.max(...points);
-    const scaleY = v => 110 - ((v - min) / (max - min + 1)) * 100;
+  const logo = document.getElementById('nav-logo');
+  logo.addEventListener('click', () => showPage('home'));
+  logo.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') showPage('home'); });
 
-    ctx.beginPath();
-    ctx.moveTo(0, scaleY(points[0]));
-    for (let i = 1; i < points.length; i++) {
-      const x = (i / (points.length - 1)) * 332;
-      const xp = ((i - 1) / (points.length - 1)) * 332;
-      const cp1x = xp + (x - xp) / 2, cp1y = scaleY(points[i - 1]);
-      const cp2x = xp + (x - xp) / 2, cp2y = scaleY(points[i]);
-      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, x, scaleY(points[i]));
+  document.getElementById('hero-cta-analyzer').addEventListener('click', () => showPage('analyzer'));
+  document.getElementById('hero-cta-dashboard').addEventListener('click', () => showPage('dashboard'));
+
+  document.querySelector('#hero-cta-analyzer').addEventListener('keydown', e => { if (e.key === 'Enter') showPage('analyzer'); });
+  document.querySelector('#hero-cta-dashboard').addEventListener('keydown', e => { if (e.key === 'Enter') showPage('dashboard'); });
+}
+
+// ══════════════════════════════════════════════════
+// DASHBOARD
+// ══════════════════════════════════════════════════
+let liveData = [42, 58, 73, 65, 81, 94, 88, 76, 63, 49, 56, 72, 68, 85, 61];
+let liveInterval = null;
+let apiConnected = false;
+let apiUrl = '';
+let apiField = '';
+
+function initDashboard() {
+  // Live chart
+  charts['live'] = new Chart(document.getElementById('chart-live').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: liveData.map((_, i) => i + 1),
+      datasets: [{ data: [...liveData], borderColor: C.white, backgroundColor: C.whiteFade, fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: C.white }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 0 },
+      plugins: { legend: { display: false }, tooltip: brandedTooltip },
+      scales: gridOpts
     }
-    ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+  });
 
-    ctx.lineTo(332, 120); ctx.lineTo(0, 120); ctx.closePath();
-    const grad = ctx.createLinearGradient(0, 0, 0, 120);
-    grad.addColorStop(0, 'rgba(255,255,255,0.08)');
-    grad.addColorStop(1, 'transparent');
-    ctx.fillStyle = grad;
-    ctx.fill();
-
-    const dot = { x: 332, y: scaleY(points[points.length - 1]) };
-    ctx.beginPath();
-    ctx.arc(dot.x, dot.y, 3, 0, Math.PI * 2);
-    ctx.fillStyle = 'white';
-    ctx.fill();
-
-    frame++;
-    if (frame % 60 === 0) {
-      points.push(30 + Math.sin(points.length * 0.5) * 20 + Math.random() * 25);
-      if (points.length > 40) points.shift();
+  // Multi-series
+  charts['multi'] = new Chart(document.getElementById('chart-multi').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul'],
+      datasets: [
+        { label: 'Series A', data: [65,59,80,81,56,55,40], borderColor: C.white, backgroundColor: C.transparent, tension: 0.4, pointRadius: 3 },
+        { label: 'Series B', data: [28,48,40,19,86,27,90], borderColor: 'rgba(255,255,255,0.45)', backgroundColor: C.transparent, tension: 0.4, pointRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: '#888', font: { size: 10 } } }, tooltip: brandedTooltip },
+      scales: gridOpts
     }
-    requestAnimationFrame(drawChart);
+  });
+
+  // Radar
+  charts['radar'] = new Chart(document.getElementById('chart-radar').getContext('2d'), {
+    type: 'radar',
+    data: {
+      labels: ['Speed','Accuracy','Reliability','Coverage','Efficiency','Clarity'],
+      datasets: [{ data: [65,59,80,81,56,95], borderColor: C.white, backgroundColor: 'rgba(255,255,255,0.08)', pointBackgroundColor: C.white }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: brandedTooltip },
+      scales: { r: { grid: { color: 'rgba(255,255,255,0.08)' }, angleLines: { color: 'rgba(255,255,255,0.08)' }, pointLabels: { color: '#777', font: { size: 10 } }, ticks: { display: false } } }
+    }
+  });
+
+  updateDashStats();
+  startLiveSimulation();
+  bindApiModal();
+}
+
+function startLiveSimulation() {
+  if (liveInterval) clearInterval(liveInterval);
+  liveInterval = setInterval(() => {
+    if (apiConnected) return; // API polling handles its own tick
+    const v = Math.floor(Math.random() * 60) + 35;
+    pushLiveValue(v);
+  }, 2000);
+}
+
+function pushLiveValue(v) {
+  liveData.push(v);
+  if (liveData.length > 25) liveData.shift();
+  if (!charts['live']) return;
+  charts['live'].data.labels = liveData.map((_, i) => i + 1);
+  charts['live'].data.datasets[0].data = [...liveData];
+  charts['live'].update('none');
+  document.getElementById('live-value').textContent = v;
+  updateDashStats();
+}
+
+function updateDashStats() {
+  const sum = liveData.reduce((a, b) => a + b, 0);
+  document.getElementById('dash-count').textContent = liveData.length;
+  document.getElementById('dash-max').textContent = Math.max(...liveData);
+  document.getElementById('dash-avg').textContent = Math.round(sum / liveData.length);
+  document.getElementById('dash-sum').textContent = sum;
+  if (liveData.length) document.getElementById('live-value').textContent = liveData[liveData.length - 1];
+}
+
+// ── API MODAL ──
+function bindApiModal() {
+  const overlay = document.getElementById('api-modal');
+  const connectBtn = document.getElementById('connect-api-btn');
+  const closeBtn = document.getElementById('api-modal-close');
+  const cancelBtn = document.getElementById('api-cancel-btn');
+  const applyBtn = document.getElementById('api-connect-btn');
+
+  connectBtn.addEventListener('click', () => { overlay.classList.add('open'); document.getElementById('api-url').focus(); });
+  closeBtn.addEventListener('click', () => overlay.classList.remove('open'));
+  cancelBtn.addEventListener('click', () => overlay.classList.remove('open'));
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
+  overlay.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.classList.remove('open'); });
+
+  applyBtn.addEventListener('click', async () => {
+    const url = document.getElementById('api-url').value.trim();
+    const field = document.getElementById('api-field').value.trim();
+    const statusEl = document.getElementById('api-status');
+    if (!url) { statusEl.innerHTML = '<div class="status-msg error">Please enter a valid URL.</div>'; return; }
+
+    setLoadingState(applyBtn, true, 'Connecting...');
+    statusEl.innerHTML = '';
+
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      const data = await res.json();
+      const val = extractApiValue(data, field);
+      if (val === null) throw new Error('Could not find a numeric value. Check the field name.');
+
+      apiUrl = url; apiField = field; apiConnected = true;
+      document.getElementById('live-status-text').textContent = 'Live API';
+      overlay.classList.remove('open');
+
+      // Poll the API
+      if (liveInterval) clearInterval(liveInterval);
+      liveInterval = setInterval(async () => {
+        try {
+          const r = await fetch(apiUrl);
+          const d = await r.json();
+          const v = extractApiValue(d, apiField);
+          if (v !== null) pushLiveValue(v);
+        } catch { /* silently skip failed polls */ }
+      }, 2000);
+
+      pushLiveValue(val);
+    } catch (err) {
+      const friendly = friendlyApiError(err.message);
+      statusEl.innerHTML = `<div class="status-msg error">${friendly}</div>`;
+    } finally {
+      setLoadingState(applyBtn, false, 'Connect');
+    }
+  });
+}
+
+function extractApiValue(data, field) {
+  if (field && typeof data === 'object' && !Array.isArray(data)) {
+    const v = data[field];
+    return typeof v === 'number' ? v : null;
   }
-  drawChart();
+  if (Array.isArray(data)) {
+    const first = data[data.length - 1];
+    if (typeof first === 'number') return first;
+    if (field && typeof first === 'object') { const v = first[field]; return typeof v === 'number' ? v : null; }
+  }
+  if (typeof data === 'number') return data;
+  return null;
+}
 
-  const defaultData = [42, 68, 31, 85, 54, 73, 29];
-  const labels = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+function friendlyApiError(msg) {
+  if (msg.includes('Failed to fetch') || msg.includes('NetworkError')) return 'Could not reach the endpoint. Check the URL and that it allows cross-origin requests (CORS).';
+  if (msg.includes('HTTP 4')) return 'The server returned an error. Check that the URL is correct and publicly accessible.';
+  if (msg.includes('HTTP 5')) return 'The server returned a 5xx error. The endpoint may be temporarily unavailable.';
+  if (msg.includes('JSON')) return 'The response is not valid JSON. Make sure the endpoint returns a JSON array or object.';
+  return msg;
+}
 
-  function buildBars(data) {
-    const barsEl = document.getElementById('bars');
-    const valsEl = document.getElementById('barVals');
-    const max = Math.max(...data);
-    barsEl.innerHTML = '';
-    valsEl.innerHTML = '';
-    data.forEach((v, i) => {
-      const bar = document.createElement('div');
-      bar.className = 'bar';
-      bar.style.height = '0px';
-      bar.setAttribute('data-label', labels[i] || String.fromCharCode(65 + i));
-      barsEl.appendChild(bar);
-      setTimeout(() => { bar.style.height = ((v / max) * 140) + 'px'; }, 80 + i * 60);
-      const bv = document.createElement('div');
-      bv.className = 'bv';
-      bv.textContent = v;
-      valsEl.appendChild(bv);
+// ══════════════════════════════════════════════════
+// ANALYZER
+// ══════════════════════════════════════════════════
+function initAnalyzer() {
+  analyzerReady = true;
+  setupDragDrop();
+  bindAnalyzerEvents();
+}
+
+function bindAnalyzerEvents() {
+  // Chart type buttons
+  document.querySelectorAll('.chart-type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.chart-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentChartType = btn.dataset.type;
+      reRenderChart();
     });
-  }
+  });
 
-  function updateBars() {
-    const raw = document.getElementById('dataInput').value;
-    const nums = raw.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
-    if (nums.length > 0) {
-      // Send to API for processing
-      fetch('/api/chart', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ values: nums })
-      })
-      .then(res => res.json())
-      .then(response => {
-        if (response.success) {
-          console.log('Stats:', response.stats);
-        }
-      })
-      .catch(console.error);
-      
-      buildBars(nums);
+  // File input
+  document.getElementById('file-input').addEventListener('change', e => {
+    if (e.target.files[0]) processFile(e.target.files[0]);
+  });
+
+  // Analyze button
+  document.getElementById('analyze-btn').addEventListener('click', runAnalysis);
+
+  // Apply column
+  document.getElementById('apply-col-btn').addEventListener('click', analyzeSelectedColumn);
+}
+
+function setupDragDrop() {
+  const zone = document.getElementById('upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) processFile(file);
+  });
+}
+
+function setLoadingState(btn, loading, loadingLabel) {
+  if (loading) {
+    btn.dataset.origText = btn.textContent;
+    btn.innerHTML = `<span class="spinner"></span>${loadingLabel || 'Loading...'}`;
+    btn.classList.add('btn-loading');
+  } else {
+    btn.innerHTML = btn.dataset.origText || 'Analyze';
+    btn.classList.remove('btn-loading');
+  }
+}
+
+function showLoadingOutput() {
+  document.getElementById('analysis-output').innerHTML = `
+    <div class="loading-overlay">
+      <div class="spinner light"></div>
+      <div class="loading-text">Analyzing data…</div>
+    </div>`;
+}
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const statusEl = document.getElementById('file-status');
+  statusEl.innerHTML = `<div class="status-msg info"><span class="spinner light" style="width:10px;height:10px;border-width:1.5px"></span> Reading ${file.name}…</div>`;
+  showLoadingOutput();
+
+  const reader = new FileReader();
+  reader.onload = ev => {
+    // Defer so loading state renders first
+    setTimeout(() => {
+      try {
+        if (ext === 'json') parseJSON(ev.target.result, file.name);
+        else parseCSV(ev.target.result, file.name);
+      } catch (err) {
+        showFileStatus('error', friendlyParseError(err, ext));
+        document.getElementById('analysis-output').innerHTML = `<div class="empty-state"><div class="empty-icon" aria-hidden="true">⚠</div><div class="empty-title">Parse Error</div><div class="empty-sub">${friendlyParseError(err, ext)}</div></div>`;
+      }
+    }, 0);
+  };
+  reader.onerror = () => showFileStatus('error', 'Could not read the file. Please try again.');
+  reader.readAsText(file);
+}
+
+function friendlyParseError(err, ext) {
+  const msg = err.message || '';
+  if (ext === 'json') {
+    if (msg.includes('Unexpected token') || msg.includes('JSON')) return 'This file does not contain a valid JSON structure. Make sure it is a JSON array (e.g. [1, 2, 3]) or an array of objects.';
+    return 'Could not parse JSON. Please check the file format.';
+  }
+  if (msg.includes('No numeric')) return 'No numeric columns were found. Make sure your CSV contains at least one column of numbers.';
+  if (msg.includes('at least')) return 'The file appears to be empty or has only one row. It needs a header row and at least one data row.';
+  return 'Could not parse this file. Try a CSV or JSON with numeric values.';
+}
+
+function getCleaningOptions() {
+  return {
+    skipEmpty: document.getElementById('opt-skip-empty').checked,
+    interpolate: document.getElementById('opt-interpolate').checked,
+    trim: document.getElementById('opt-trim').checked
+  };
+}
+
+function cleanValues(rawValues) {
+  const opts = getCleaningOptions();
+  let vals = rawValues;
+  if (opts.trim) vals = vals.map(v => (typeof v === 'string' ? v.trim() : v));
+
+  const parsed = vals.map(v => parseFloat(v));
+  const hasNaN = parsed.some(isNaN);
+
+  if (!hasNaN) return parsed;
+
+  if (opts.interpolate) {
+    // Linear interpolation for NaN
+    const result = [...parsed];
+    for (let i = 0; i < result.length; i++) {
+      if (isNaN(result[i])) {
+        const prev = result.slice(0, i).reverse().find(x => !isNaN(x));
+        const next = result.slice(i + 1).find(x => !isNaN(x));
+        if (prev !== undefined && next !== undefined) result[i] = (prev + next) / 2;
+        else if (prev !== undefined) result[i] = prev;
+        else if (next !== undefined) result[i] = next;
+        else result[i] = 0;
+      }
     }
+    return result;
   }
 
-  buildBars(defaultData);
+  if (opts.skipEmpty) return parsed.filter(v => !isNaN(v));
 
-  const io = new IntersectionObserver(entries => {
-    entries.forEach(e => {
-      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+  return parsed; // return as-is, will contain NaNs
+}
+
+function parseCSV(text, name) {
+  const opts = getCleaningOptions();
+  const lines = text.split('\n').map(l => opts.trim ? l.trim() : l).filter(l => l);
+  if (lines.length < 2) throw new Error('File must have at least a header row and one data row.');
+
+  const delimiter = lines[0].includes('\t') ? '\t' : ',';
+  const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^"|"$/g, ''));
+  const rows = lines.slice(1)
+    .map(l => l.split(delimiter).map(v => v.trim().replace(/^"|"$/g, '')))
+    .filter(r => r.some(c => c !== ''));
+
+  parsedCSVData = { headers, rows };
+
+  const numericCols = headers.filter((h, ci) =>
+    rows.slice(0, Math.min(10, rows.length)).some(r => !isNaN(parseFloat(r[ci])) && r[ci] !== '')
+  );
+  if (numericCols.length === 0) throw new Error('No numeric columns found.');
+
+  showFileStatus('success', `Loaded: ${name} — ${rows.length} rows, ${headers.length} columns`);
+  renderColumnPicker(headers, numericCols);
+  selectedColumn = numericCols[0];
+  analyzeCSVColumn(numericCols[0]);
+}
+
+function parseJSON(text, name) {
+  let data;
+  try { data = JSON.parse(text); }
+  catch (e) { throw new Error('JSON parse error: ' + e.message); }
+
+  let values = [], labels = [];
+  if (Array.isArray(data)) {
+    if (typeof data[0] === 'number') {
+      values = data; labels = data.map((_, i) => (i + 1) + '');
+    } else if (typeof data[0] === 'object') {
+      const keys = Object.keys(data[0]);
+      const numKey = keys.find(k => typeof data[0][k] === 'number') || keys[keys.length - 1];
+      const labelKey = keys[0];
+      values = data.map(d => parseFloat(d[numKey]));
+      labels = data.map(d => String(d[labelKey]));
+    }
+  } else if (typeof data === 'object') {
+    // key-value pairs
+    labels = Object.keys(data);
+    values = Object.values(data).map(Number);
+  }
+
+  values = cleanValues(values);
+  if (values.filter(v => !isNaN(v)).length === 0) throw new Error('No numeric values found in JSON.');
+
+  showFileStatus('success', `Loaded: ${name} — ${values.length} data points`);
+  document.getElementById('col-picker-section').style.display = 'none';
+  document.getElementById('inputLabels').value = labels.join(', ');
+  document.getElementById('inputData').value = values.join(', ');
+  renderAnalysisOutput(labels, values);
+}
+
+function renderColumnPicker(headers, numericCols) {
+  const section = document.getElementById('col-picker-section');
+  const picker = document.getElementById('col-picker');
+  section.style.display = 'block';
+  picker.innerHTML = '';
+  numericCols.forEach((h, idx) => {
+    const item = document.createElement('label');
+    item.className = 'col-pick-item' + (idx === 0 ? ' selected' : '');
+    item.innerHTML = `<input type="radio" name="col" value="${h}" ${idx === 0 ? 'checked' : ''}><span>${h}</span>`;
+    item.querySelector('input').addEventListener('change', () => {
+      document.querySelectorAll('.col-pick-item').forEach(el => el.classList.remove('selected'));
+      item.classList.add('selected');
+      selectedColumn = h;
     });
-  }, { threshold: 0.15 });
-  document.querySelectorAll('.intersect').forEach(el => io.observe(el));
+    picker.appendChild(item);
+  });
+}
+
+function analyzeSelectedColumn() {
+  if (parsedCSVData && selectedColumn) analyzeCSVColumn(selectedColumn);
+}
+
+function analyzeCSVColumn(colName) {
+  const ci = parsedCSVData.headers.indexOf(colName);
+  const rawValues = parsedCSVData.rows.map(r => r[ci]);
+  const values = cleanValues(rawValues).filter(v => !isNaN(v));
+
+  const labelCi = parsedCSVData.headers.findIndex((h, i) =>
+    i !== ci && parsedCSVData.rows.some(r => isNaN(parseFloat(r[i])))
+  );
+  const labels = parsedCSVData.rows
+    .filter((_, i) => !isNaN(parseFloat(parsedCSVData.rows[i][ci])))
+    .map((r, i) => labelCi >= 0 ? r[labelCi] : (i + 1) + '');
+
+  document.getElementById('inputLabels').value = labels.slice(0, values.length).join(', ');
+  document.getElementById('inputData').value = values.join(', ');
+  renderAnalysisOutput(labels.slice(0, values.length), values, colName);
+}
+
+function runAnalysis() {
+  const btn = document.getElementById('analyze-btn');
+  setLoadingState(btn, true, 'Analyzing…');
+  showLoadingOutput();
+
+  setTimeout(() => {
+    try {
+      const labelsRaw = document.getElementById('inputLabels').value;
+      const dataRaw = document.getElementById('inputData').value;
+      const labels = labelsRaw.split(',').map(s => s.trim()).filter(Boolean);
+      const raw = dataRaw.split(',');
+      const values = cleanValues(raw).filter(v => !isNaN(v));
+
+      if (values.length === 0) {
+        document.getElementById('analysis-output').innerHTML = `<div class="status-msg error" style="margin:0">No valid numeric values found. Please check your input.</div>`;
+      } else {
+        renderAnalysisOutput(labels.length ? labels : values.map((_, i) => (i + 1) + ''), values);
+      }
+    } finally {
+      setLoadingState(btn, false, 'Analyze');
+    }
+  }, 0);
+}
+
+function showFileStatus(type, msg) {
+  document.getElementById('file-status').innerHTML = `<div class="status-msg ${type}">${msg}</div>`;
+}
+
+// ══════════════════════════════════════════════════
+// STATISTICS
+// ══════════════════════════════════════════════════
+function computeStats(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  const n = sorted.length;
+  const sum = values.reduce((a, b) => a + b, 0);
+  const mean = sum / n;
+
+  function lerp(arr, q) {
+    const pos = (arr.length - 1) * q;
+    const base = Math.floor(pos);
+    const rest = pos - base;
+    return arr[base + 1] !== undefined ? arr[base] + rest * (arr[base + 1] - arr[base]) : arr[base];
+  }
+
+  const median = lerp(sorted, 0.5);
+  const q1 = lerp(sorted, 0.25);
+  const q3 = lerp(sorted, 0.75);
+  const iqr = q3 - q1;
+
+  const freq = {};
+  values.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
+  const maxF = Math.max(...Object.values(freq));
+  const mode = Object.keys(freq).filter(k => freq[k] === maxF).map(Number);
+
+  const variance = values.reduce((acc, v) => acc + (v - mean) ** 2, 0) / n;
+  const stdDev = Math.sqrt(variance);
+  const min = sorted[0], max = sorted[n - 1], range = max - min;
+
+  const lowerFence = q1 - 1.5 * iqr;
+  const upperFence = q3 + 1.5 * iqr;
+  const outliers = values.filter(v => v < lowerFence || v > upperFence);
+
+  const skewness = stdDev > 0 ? (3 * (mean - median)) / stdDev : 0;
+
+  return { n, sum, mean, median, mode, q1, q2: median, q3, iqr, variance, stdDev, min, max, range, outliers, lowerFence, upperFence, skewness, sorted };
+}
+
+function fmt(n) {
+  if (n === undefined || n === null || isNaN(n)) return '—';
+  return Number.isInteger(n) ? n.toLocaleString() : parseFloat(n.toFixed(4)).toLocaleString();
+}
+
+// ══════════════════════════════════════════════════
+// RENDER ANALYSIS OUTPUT
+// ══════════════════════════════════════════════════
+function renderAnalysisOutput(labels, values, title) {
+  const s = computeStats(values);
+  const datasetTitle = title || 'Dataset';
+
+  const html = `
+    <div class="analysis-output">
+      <div class="analysis-header">
+        <div>
+          <div class="analysis-title">${datasetTitle}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--gray);margin-top:4px">${s.n} values · ${s.outliers.length} outlier${s.outliers.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div class="analysis-header-right">
+          <div class="export-group">
+            <button class="btn-export" id="export-csv-btn" title="Download analysis as CSV">↓ CSV</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar" role="tablist">
+        <button class="tab-btn active" role="tab" aria-selected="true" data-tab="chart">Chart</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="stats">Statistics</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="distribution">Distribution</button>
+        <button class="tab-btn" role="tab" aria-selected="false" data-tab="data">Data Table</button>
+      </div>
+
+      <!-- CHART TAB -->
+      <div class="tab-content active" id="tab-chart" role="tabpanel">
+        <div class="output-chart-wrap">
+          <div class="chart-container"><canvas id="chart-generated" aria-label="Data chart"></canvas></div>
+        </div>
+        <div class="stats-table">
+          <div class="stats-cell"><div class="stats-cell-label">Mean</div><div class="stats-cell-value">${fmt(s.mean)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Median</div><div class="stats-cell-value">${fmt(s.median)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Min</div><div class="stats-cell-value">${fmt(s.min)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Max</div><div class="stats-cell-value">${fmt(s.max)}</div></div>
+        </div>
+      </div>
+
+      <!-- STATS TAB -->
+      <div class="tab-content" id="tab-stats" role="tabpanel">
+        <div class="stats-table" style="grid-template-columns:repeat(3,1fr)">
+          <div class="stats-cell"><div class="stats-cell-label">Count (n)</div><div class="stats-cell-value">${s.n}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Sum</div><div class="stats-cell-value">${fmt(s.sum)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Range</div><div class="stats-cell-value">${fmt(s.range)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Mean (μ)</div><div class="stats-cell-value">${fmt(s.mean)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Median (Q2)</div><div class="stats-cell-value">${fmt(s.median)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Mode</div><div class="stats-cell-value">${s.mode.length <= 3 ? s.mode.map(fmt).join(', ') : s.mode.length + ' values'}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Std Deviation (σ)</div><div class="stats-cell-value">${fmt(s.stdDev)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Variance (σ²)</div><div class="stats-cell-value">${fmt(s.variance)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Skewness</div><div class="stats-cell-value">${fmt(s.skewness)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Q1 (25th pct)</div><div class="stats-cell-value">${fmt(s.q1)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Q3 (75th pct)</div><div class="stats-cell-value">${fmt(s.q3)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">IQR</div><div class="stats-cell-value">${fmt(s.iqr)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Lower Fence</div><div class="stats-cell-value">${fmt(s.lowerFence)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Upper Fence</div><div class="stats-cell-value">${fmt(s.upperFence)}</div></div>
+          <div class="stats-cell"><div class="stats-cell-label">Outliers</div><div class="stats-cell-value">${s.outliers.length}</div></div>
+        </div>
+        <div style="margin-top:24px">
+          <div class="panel-label" style="margin-bottom:16px">Quartile Distribution</div>
+          ${renderQuartileBar(s)}
+        </div>
+        ${s.outliers.length > 0 ? `
+        <div style="margin-top:24px">
+          <div class="panel-label" style="margin-bottom:12px">Outliers (IQR method) — ${s.outliers.length} detected</div>
+          <div class="outlier-list">
+            ${s.outliers.map(v => `<span class="outlier-tag ${v > s.upperFence ? 'high' : ''}" title="${v > s.upperFence ? 'Above upper fence' : 'Below lower fence'}">${fmt(v)}</span>`).join('')}
+          </div>
+        </div>` : `<div style="margin-top:24px;font-family:'DM Mono',monospace;font-size:12px;color:var(--gray)">✓ No outliers detected.</div>`}
+      </div>
+
+      <!-- DISTRIBUTION TAB -->
+      <div class="tab-content" id="tab-distribution" role="tabpanel">
+        <div style="margin-bottom:24px">
+          <div class="panel-label" style="margin-bottom:16px">Frequency Distribution</div>
+          ${renderDistribution(s.sorted, s.min, s.max)}
+        </div>
+        <div style="margin-top:28px">
+          <div class="panel-label" style="margin-bottom:16px">Box Plot (Quartile View)</div>
+          ${renderBoxPlot(s)}
+        </div>
+      </div>
+
+      <!-- DATA TABLE TAB -->
+      <div class="tab-content" id="tab-data" role="tabpanel">
+        <div class="data-table-wrap">
+          <table class="data-table" aria-label="Data table with computed statistics">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Label</th>
+                <th scope="col">Value</th>
+                <th scope="col">z-score</th>
+                <th scope="col">Rank</th>
+                <th scope="col">Flag</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${values.map((v, i) => {
+                const z = s.stdDev > 0 ? ((v - s.mean) / s.stdDev).toFixed(2) : '0.00';
+                const rank = s.sorted.filter(x => x <= v).length;
+                const isOutlier = v < s.lowerFence || v > s.upperFence;
+                return `<tr>
+                  <td>${i + 1}</td>
+                  <td>${labels[i] || i + 1}</td>
+                  <td>${fmt(v)}</td>
+                  <td style="color:${Math.abs(parseFloat(z)) > 2 ? 'var(--gray-light)' : 'var(--gray-muted)'}">${z}</td>
+                  <td>${rank}</td>
+                  <td style="color:${isOutlier ? 'rgba(255,255,255,0.85)' : 'var(--gray-muted)'}">${isOutlier ? '⚠ outlier' : '—'}</td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('analysis-output').innerHTML = html;
+
+  // Bind tab buttons
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.setAttribute('aria-selected', 'false'); });
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      document.getElementById('tab-' + tabId).classList.add('active');
+      if (tabId === 'chart') reRenderChart();
+    });
+  });
+
+  // Export CSV
+  document.getElementById('export-csv-btn').addEventListener('click', () => exportCSV(labels, values, s));
+
+  // Render chart
+  renderGeneratedChart(labels, values);
+  window._lastLabels = labels;
+  window._lastValues = values;
+}
+
+// ── EXPORT ──
+function exportCSV(labels, values, s) {
+  const rows = [
+    ['#', 'Label', 'Value', 'z-score', 'Rank', 'Outlier', 'Quartile'],
+    ...values.map((v, i) => {
+      const z = s.stdDev > 0 ? ((v - s.mean) / s.stdDev).toFixed(4) : '0';
+      const rank = s.sorted.filter(x => x <= v).length;
+      const isOutlier = v < s.lowerFence || v > s.upperFence;
+      const q = v <= s.q1 ? 'Q1' : v <= s.q2 ? 'Q2' : v <= s.q3 ? 'Q3' : 'Q4';
+      return [i + 1, labels[i] || i + 1, v, z, rank, isOutlier ? 'YES' : 'NO', q];
+    }),
+    [],
+    ['--- Statistics ---'],
+    ['n', s.n], ['Sum', s.sum], ['Mean', s.mean.toFixed(4)], ['Median', s.median.toFixed(4)],
+    ['Std Dev', s.stdDev.toFixed(4)], ['Variance', s.variance.toFixed(4)],
+    ['Min', s.min], ['Max', s.max], ['Range', s.range],
+    ['Q1', s.q1.toFixed(4)], ['Q3', s.q3.toFixed(4)], ['IQR', s.iqr.toFixed(4)],
+    ['Lower Fence', s.lowerFence.toFixed(4)], ['Upper Fence', s.upperFence.toFixed(4)],
+    ['Outliers', s.outliers.length], ['Skewness', s.skewness.toFixed(4)]
+  ];
+
+  const csv = rows.map(r => r.map(cell => `"${cell}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'xylanthen-analysis.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+// ── VISUALIZATIONS ──
+function renderQuartileBar(s) {
+  const total = s.max - s.min || 1;
+  const w = v => Math.max(0.5, ((v) / total * 100).toFixed(1));
+  const w1 = w(s.q1 - s.min), w2 = w(s.q2 - s.q1), w3 = w(s.q3 - s.q2), w4 = w(s.max - s.q3);
+  return `
+    <div class="quartile-bar-wrap">
+      <div class="quartile-labels">
+        <span class="quartile-label">Min: ${fmt(s.min)}</span>
+        <span class="quartile-label">Q1: ${fmt(s.q1)}</span>
+        <span class="quartile-label">Q2: ${fmt(s.q2)}</span>
+        <span class="quartile-label">Q3: ${fmt(s.q3)}</span>
+        <span class="quartile-label">Max: ${fmt(s.max)}</span>
+      </div>
+      <div class="quartile-bar" role="img" aria-label="Quartile distribution bar">
+        <div class="quartile-seg q1" style="flex:${w1}" title="Min → Q1: ${fmt(s.min)} to ${fmt(s.q1)}"></div>
+        <div class="quartile-seg q2" style="flex:${w2}" title="Q1 → Q2 (Median): ${fmt(s.q1)} to ${fmt(s.q2)}"></div>
+        <div class="quartile-seg q3" style="flex:${w3}" title="Q2 → Q3: ${fmt(s.q2)} to ${fmt(s.q3)}"></div>
+        <div class="quartile-seg q4" style="flex:${w4}" title="Q3 → Max: ${fmt(s.q3)} to ${fmt(s.max)}"></div>
+      </div>
+    </div>`;
+}
+
+function renderDistribution(sorted, min, max) {
+  const binCount = Math.min(14, Math.max(5, Math.ceil(Math.sqrt(sorted.length))));
+  const binSize = (max - min) / binCount || 1;
+  const bins = Array.from({length: binCount}, (_, i) => ({ start: min + i * binSize, end: min + (i+1)*binSize, count: 0 }));
+  sorted.forEach(v => { const bi = Math.min(Math.floor((v - min) / binSize), binCount - 1); if (bi >= 0) bins[bi].count++; });
+  const maxCount = Math.max(...bins.map(b => b.count), 1);
+  return `
+    <div class="dist-bars" role="img" aria-label="Frequency distribution histogram">
+      ${bins.map(b => `
+        <div class="dist-bar" style="height:${Math.max(3, (b.count/maxCount)*100)}%" tabindex="0" title="${fmt(b.start)}–${fmt(b.end)}, n=${b.count}">
+          <div class="dist-bar-tooltip">${fmt(b.start)}–${fmt(b.end)}<br>n = ${b.count}</div>
+        </div>`).join('')}
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--gray-muted)">
+      <span>${fmt(min)}</span><span>${fmt(max)}</span>
+    </div>`;
+}
+
+function renderBoxPlot(s) {
+  const total = s.max - s.min || 1;
+  const toP = v => Math.max(0, Math.min(100, ((v - s.min) / total * 100))).toFixed(2);
+  const iqrWidth = (toP(s.q3) - toP(s.q1)).toFixed(2);
+  return `
+    <div style="position:relative;height:60px;margin:0 24px" role="img" aria-label="Box plot from ${fmt(s.min)} to ${fmt(s.max)}, median ${fmt(s.median)}">
+      <div style="position:absolute;top:50%;left:0;right:0;height:1px;background:rgba(255,255,255,0.15)"></div>
+      <div style="position:absolute;top:18%;left:${toP(s.q1)}%;width:${iqrWidth}%;height:64%;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.35)"></div>
+      <div style="position:absolute;top:18%;left:${toP(s.median)}%;width:2px;height:64%;background:white" title="Median: ${fmt(s.median)}"></div>
+      <div style="position:absolute;top:44%;left:${toP(s.min)}%;width:2px;height:12%;background:rgba(255,255,255,0.4)" title="Min: ${fmt(s.min)}"></div>
+      <div style="position:absolute;top:44%;left:${toP(s.max)}%;width:2px;height:12%;background:rgba(255,255,255,0.4)" title="Max: ${fmt(s.max)}"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-family:'DM Mono',monospace;font-size:10px;color:var(--gray-muted);margin:8px 24px 0">
+      <span>Min ${fmt(s.min)}</span>
+      <span>Q1 ${fmt(s.q1)}</span>
+      <span>Med ${fmt(s.median)}</span>
+      <span>Q3 ${fmt(s.q3)}</span>
+      <span>Max ${fmt(s.max)}</span>
+    </div>`;
+}
+
+// ── CHART RENDERING ──
+function renderGeneratedChart(labels, values) {
+  const canvas = document.getElementById('chart-generated');
+  if (!canvas) return;
+  if (charts['generated']) { charts['generated'].destroy(); delete charts['generated']; }
+
+  const type = currentChartType;
+  const isCircular = ['pie', 'doughnut', 'polarArea'].includes(type);
+  const bgColors = multiColors(values.length);
+
+  const cfgMap = {
+    line: { type: 'line', data: { labels, datasets: [{ data: values, borderColor: C.white, backgroundColor: C.whiteFade, fill: true, tension: 0.4, pointBackgroundColor: C.white, pointRadius: 4 }] } },
+    bar:  { type: 'bar',  data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderRadius: 3 }] } },
+    pie:  { type: 'pie',  data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderWidth: 0 }] } },
+    doughnut: { type: 'doughnut', data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderWidth: 0 }] } },
+    radar: { type: 'radar', data: { labels, datasets: [{ data: values, borderColor: C.white, backgroundColor: 'rgba(255,255,255,0.07)', pointBackgroundColor: C.white }] } },
+    polarArea: { type: 'polarArea', data: { labels, datasets: [{ data: values, backgroundColor: bgColors, borderWidth: 0 }] } }
+  };
+
+  const cfg = cfgMap[type] || cfgMap.line;
+  cfg.options = {
+    responsive: true, maintainAspectRatio: false,
+    animation: type === 'bar' ? { ...growAnimation } : { duration: 600, easing: 'easeOutQuart' },
+    plugins: {
+      legend: { display: isCircular || type === 'radar', labels: { color: '#aaa', font: { size: 10 }, boxWidth: 10 } },
+      tooltip: brandedTooltip
+    },
+    scales: isCircular ? {} : type === 'radar' ? {
+      r: { grid: { color: 'rgba(255,255,255,0.07)' }, angleLines: { color: 'rgba(255,255,255,0.07)' }, pointLabels: { color: '#777', font: { size: 10 } }, ticks: { display: false } }
+    } : gridOpts
+  };
+  if (type === 'doughnut') cfg.options.cutout = '55%';
+
+  charts['generated'] = new Chart(canvas.getContext('2d'), cfg);
+}
+
+function reRenderChart() {
+  if (window._lastLabels && window._lastValues) renderGeneratedChart(window._lastLabels, window._lastValues);
+}
+
+// ══════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  bindNav();
+});
 </script>
 </body>
 </html>
